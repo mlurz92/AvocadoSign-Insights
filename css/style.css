@@ -88,7 +88,7 @@ tr[aria-expanded="true"] .row-toggle-icon { transform: rotate(180deg); }
 .highlight-suspect-feature { background-color: var(--status-red-bg); border-radius: var(--border-radius-sm); padding: 1px 4px; margin: -1px -4px; }
 .element-flash-highlight { animation: flashHighlight 1.5s ease-out; }
 @keyframes flashHighlight {
-    0%, 70% { background-color: rgba(244, 162, 97, 0.2); box-shadow: 0 0 8px rgba(244, 162, 97, 0.4); }
+    0%, 70% { background-color: rgba(var(--warning-color-rgb), 0.2); box-shadow: 0 0 8px rgba(var(--warning-color-rgb), 0.4); }
     100% { background-color: transparent; box-shadow: none; }
 }
 

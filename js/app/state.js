@@ -26,7 +26,7 @@ window.state = (() => {
         };
 
         const loadedSection = loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION);
-        const isValidSection = window.PUBLICATION_CONFIG.sections.some(s => s.id === loadedSection || s.subSections.some(sub => sub.id === loadedSection));
+        const isValidSection = window.PUBLICATION_CONFIG.sections.some(s => s.id === loadedSection || (s.subSections && s.subSections.some(sub => sub.id === loadedSection)));
 
         currentState = {
             currentCohort: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.CURRENT_COHORT) ?? defaultState.currentCohort,
@@ -103,7 +103,7 @@ window.state = (() => {
 
     function getPublicationSection() { return currentState.publicationSection; }
     function setPublicationSection(newSectionId) {
-        const isValid = window.PUBLICATION_CONFIG.sections.some(s => s.id === newSectionId || s.subSections.some(sub => sub.id === newSectionId));
+        const isValid = window.PUBLICATION_CONFIG.sections.some(s => s.id === newSectionId || (s.subSections && s.subSections.some(sub => sub.id === newSectionId)));
         return isValid ? _setter('publicationSection', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION, newSectionId) : false;
     }
 

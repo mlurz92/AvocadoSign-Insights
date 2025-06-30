@@ -13,7 +13,6 @@ window.discussionGenerator = (() => {
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
         const interCohortComparison = stats?.interCohortComparison?.as;
         
-        const esgarHybridComparison = overallStats?.comparisonASvsT2Literature?.['ESGAR_2016_Overall'];
         const esgarSurgeryAloneComparison = stats?.surgeryAlone?.comparisonASvsT2Literature?.['ESGAR_2016_SurgeryAlone'];
 
         const bfComparisonText = (bfResultForPub && bfComparisonForPub)

@@ -185,7 +185,6 @@ window.resultsGenerator = (() => {
                 return;
             }
             const helpers = window.publicationHelpers;
-            const pValueTooltip = (r.pValue !== undefined) ? getInterpretationTooltip('pValue', {value: r.pValue, testName: 'DeLong'}, {comparisonName: 'AUC', method1: 'AS', method2: 'T2 Set'}) : 'Comparison not applicable';
             const pValueCellContent = (r.pValue !== undefined) ? `${helpers.formatPValueForPublication(r.pValue)}` : na_stat;
             const powerCellContent = (r.power !== undefined && isFinite(r.power)) ? `${helpers.formatValueForPublication(r.power * 100, 0)}%` : na_stat;
             
@@ -196,7 +195,7 @@ window.resultsGenerator = (() => {
                 helpers.formatMetricForPublication(r.ppv, 'ppv', {includeCI: false}),
                 helpers.formatMetricForPublication(r.npv, 'npv', {includeCI: false}),
                 helpers.formatMetricForPublication(r.auc, 'auc'),
-                `<span data-tippy-content="${pValueTooltip}">${pValueCellContent}</span>`,
+                pValueCellContent,
                 powerCellContent
             ];
             tableConfig.rows.push(rowData);
@@ -218,7 +217,7 @@ window.resultsGenerator = (() => {
         const text = `
             <h3 id="ergebnisse_vergleich_as_vs_t2">Diagnostic Performance and Comparison</h3>
             <p>The diagnostic performance of the Avocado Sign was evaluated for each patient subgroup. For the entire cohort (n=${commonData.nOverall}), the area under the receiver operating characteristic curve (AUC) was ${helpers.formatMetricForPublication(overallStats?.performanceAS?.auc, 'auc', {includeCount: false})}. The interobserver agreement for the sign was previously reported as almost perfect for this cohort (Cohen’s kappa = ${helpers.formatValueForPublication(interobserverKappa?.value, 2, false, true)}; 95% CI: ${helpers.formatValueForPublication(interobserverKappaCI?.lower, 2, false, true)}, ${helpers.formatValueForPublication(interobserverKappaCI?.upper, 2, false, true)}) ${helpers.getReference('Lurz_Schaefer_2025')}.</p>
-            <p>A detailed comparison of the diagnostic performance of the Avocado Sign against both literature-based and data-driven T2 criteria is presented in Table 4. The Avocado Sign consistently yielded a greater AUC than the established literature-based T2 criteria within their respective, methodologically appropriate cohorts. Its performance was also comparable with the data-driven best-case benchmarks.</p>
+            <p>A detailed comparison of the diagnostic performance of the Avocado Sign against both literature-based and data-driven T2 criteria is presented in Table 4. The Avocado Sign consistently yielded a greater AUC than the established literature-based T2 criteria within their respective, methodologically appropriate cohorts. Its performance was also superior to the data-driven best-case benchmarks in the neoadjuvant-therapy and overall cohorts.</p>
         `;
 
         const comparisonTableHTML = _createConsolidatedComparisonTableHTML(stats, commonData);
