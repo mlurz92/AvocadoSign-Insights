@@ -94,8 +94,8 @@ window.resultsGenerator = (() => {
             }
         };
 
-        const generateRowData = (name, pValue, performanceStats, isPlaceholder = false) => ({
-            name, pValue, isPlaceholder, ...performanceStats
+        const generateRowData = (name, pValue, power, performanceStats, isPlaceholder = false) => ({
+            name, pValue, power, isPlaceholder, ...performanceStats
         });
         
         const authorNameMap = {
@@ -116,7 +116,7 @@ window.resultsGenerator = (() => {
 
         const asResults = cohortOrder.map(cohortId => {
             const asPerf = stats[cohortId]?.performanceAS;
-            return asPerf ? generateRowData(`Avocado Sign (${getCohortDisplayName(cohortId)})`, undefined, asPerf) : null;
+            return asPerf ? generateRowData(`Avocado Sign (${getCohortDisplayName(cohortId)})`, undefined, undefined, asPerf) : null;
         }).filter(Boolean);
         addResults(asResults, 'Avocado Sign');
 
@@ -129,7 +129,7 @@ window.resultsGenerator = (() => {
                 const comp = statsForSet.comparisonASvsT2Literature?.[set.id];
                 if (perf) {
                     const criteriaSetName = authorNameMap[set.id] || set.name;
-                    return generateRowData(criteriaSetName, comp?.delong?.pValue, perf);
+                    return generateRowData(criteriaSetName, comp?.delong?.pValue, comp?.delong?.power, perf);
                 }
             }
             return null;
@@ -142,7 +142,7 @@ window.resultsGenerator = (() => {
             const bfPerf = cohortStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
             const bfComp = cohortStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
             const nameContent = `Best-Case T2 Criteria (${getCohortDisplayName(cohortId)})`;
-            bfResults.push(generateRowData(nameContent, bfComp?.delong?.pValue, bfPerf, !bfPerf));
+            bfResults.push(generateRowData(nameContent, bfComp?.delong?.pValue, bfComp?.delong?.power, bfPerf, !bfPerf));
         });
         addResults(bfResults, 'Data-driven Best-Case T2 Criteria');
 
@@ -156,7 +156,7 @@ window.resultsGenerator = (() => {
                 const comp = statsForSet.comparisonASvsT2Literature?.[set.id];
                 if (perf) {
                     const criteriaSetName = authorNameMap[set.id] || set.name;
-                    const row = generateRowData(criteriaSetName, comp?.delong?.pValue, perf);
+                    const row = generateRowData(criteriaSetName, comp?.delong?.pValue, comp?.delong?.power, perf);
                     if (cohortForSet === 'surgeryAlone') litSurgeryAlone.push(row);
                     else if (cohortForSet === 'neoadjuvantTherapy') litNeoadjuvant.push(row);
                     else litOverall.push(row);
@@ -170,23 +170,24 @@ window.resultsGenerator = (() => {
         const tableConfig = {
             id: 'table-results-consolidated-comparison',
             caption: 'Table 4. Diagnostic Performance Comparison of Avocado Sign vs T2-based Criteria',
-            headers: ['Set', 'Sensitivity', 'Specificity', 'PPV', 'NPV', 'AUC (95% CI)', '<em>P</em> value (vs AS)'],
+            headers: ['Set', 'Sensitivity', 'Specificity', 'PPV', 'NPV', 'AUC (95% CI)', '<em>P</em> value (vs AS)', 'Power (vs AS)'],
             rows: [],
-            notes: 'Data are percentages, with numerators and denominators in parentheses. AUC = Area under the receiver operating characteristic curve, AS = Avocado Sign, NPV = Negative predictive value, PPV = Positive predictive value. The <em>P</em> value (DeLong test) indicates the statistical significance of the difference in AUC compared to the Avocado Sign within the respective cohort.'
+            notes: 'Data are percentages, with numerators and denominators in parentheses. AUC = Area under the receiver operating characteristic curve, AS = Avocado Sign, NPV = Negative predictive value, PPV = Positive predictive value. The <em>P</em> value (DeLong test) indicates the statistical significance of the difference in AUC compared to the Avocado Sign within the respective cohort. Power indicates the post-hoc statistical power for the AUC comparison.'
         };
 
         results.forEach(r => {
             if (r.isSeparator) {
-                tableConfig.rows.push([`<td colspan="7" class="text-start table-group-divider fw-bold pt-2">${r.name}</td>`]);
+                tableConfig.rows.push([`<td colspan="8" class="text-start table-group-divider fw-bold pt-2">${r.name}</td>`]);
                 return;
             }
             if (r.isPlaceholder) {
-                tableConfig.rows.push([r.name, ...Array(6).fill(`<span class="text-center text-muted d-block">${na_stat}</span>`)]);
+                tableConfig.rows.push([r.name, ...Array(7).fill(`<span class="text-center text-muted d-block">${na_stat}</span>`)]);
                 return;
             }
             const helpers = window.publicationHelpers;
             const pValueTooltip = (r.pValue !== undefined) ? getInterpretationTooltip('pValue', {value: r.pValue, testName: 'DeLong'}, {comparisonName: 'AUC', method1: 'AS', method2: 'T2 Set'}) : 'Comparison not applicable';
             const pValueCellContent = (r.pValue !== undefined) ? `${helpers.formatPValueForPublication(r.pValue)}` : na_stat;
+            const powerCellContent = (r.power !== undefined && isFinite(r.power)) ? `${helpers.formatValueForPublication(r.power * 100, 0)}%` : na_stat;
             
             const rowData = [
                 r.name,
@@ -195,7 +196,8 @@ window.resultsGenerator = (() => {
                 helpers.formatMetricForPublication(r.ppv, 'ppv', {includeCI: false}),
                 helpers.formatMetricForPublication(r.npv, 'npv', {includeCI: false}),
                 helpers.formatMetricForPublication(r.auc, 'auc'),
-                `<span data-tippy-content="${pValueTooltip}">${pValueCellContent}</span>`
+                `<span data-tippy-content="${pValueTooltip}">${pValueCellContent}</span>`,
+                powerCellContent
             ];
             tableConfig.rows.push(rowData);
         });
