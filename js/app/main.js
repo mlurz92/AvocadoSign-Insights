@@ -384,6 +384,51 @@ class App {
         const resultData = window.bruteForceManager.getResultsForCohortAndMetric(targetCohortId, metric);
         window.uiManager.updateElementHTML('brute-force-modal-body', window.uiComponents.createBruteForceModalContent(resultData));
         if (this.bruteForceModal) {
+            const modalTitleEl = document.getElementById('bruteForceModalLabel');
+            if (modalTitleEl) {
+                modalTitleEl.textContent = 'Brute-Force Optimization Results';
+            }
+            this.bruteForceModal.show();
+        }
+    }
+
+    showMismatchDetails(mismatchKey) {
+        const mismatchData = window.state.getMismatchData();
+        if (!mismatchData || !mismatchData[mismatchKey]) {
+            window.uiManager.showToast('Could not find data for this mismatch category.', 'warning');
+            return;
+        }
+    
+        const patientList = mismatchData[mismatchKey];
+        const texts = window.APP_CONFIG.UI_TEXTS.insightsTab.mismatchAnalysis;
+        
+        const keyToLabelMap = {
+            'concordantCorrect': texts.concordantCorrect,
+            'asSuperior': texts.asSuperior,
+            't2Superior': texts.t2Superior,
+            'concordantIncorrect': texts.concordantIncorrect
+        };
+
+        const title = `Patients in Category: ${keyToLabelMap[mismatchKey] || mismatchKey}`;
+    
+        let contentHTML = `<p>Found ${patientList.length} patients in this category.</p>`;
+        if (patientList.length > 0) {
+            contentHTML += '<ul class="list-group list-group-flush">';
+            patientList.forEach(p => {
+                contentHTML += `<li class="list-group-item d-flex justify-content-between align-items-center small">
+                    <span>ID: ${p.id} - ${p.lastName}, ${p.firstName}</span>
+                    <span class="badge bg-secondary rounded-pill">N: ${p.nStatus} | AS: ${p.asStatus} | T2: ${p.t2Status}</span>
+                </li>`;
+            });
+            contentHTML += '</ul>';
+        }
+    
+        const modalTitleEl = document.getElementById('bruteForceModalLabel');
+        if (modalTitleEl) {
+            modalTitleEl.textContent = title;
+        }
+        window.uiManager.updateElementHTML('brute-force-modal-body', contentHTML);
+        if (this.bruteForceModal) {
             this.bruteForceModal.show();
         }
     }
@@ -473,7 +518,7 @@ class App {
         window.uiManager.showToast('Preparing charts for export...', 'info', 2000);
         await this._ensureChartsAreRenderedForExport();
 
-        const allChartContainerIds = Array.from(document.querySelectorAll('[id^="chart-"], [id*="-chart-"], [id$="-chart"]')).map(el => el.id);
+        const allChartContainerIds = Array.from(document.querySelectorAll('[id^="chart-"], [id*="-chart-"], [id$="-chart"], [id^="export-"]')).map(el => el.id);
         const uniqueChartIds = [...new Set(allChartContainerIds)];
 
         window.exportService.exportChartsAsSvg(uniqueChartIds);

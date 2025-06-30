@@ -636,11 +636,22 @@ window.uiComponents = (() => {
             <div id="mismatch-analysis-results" class="mt-4">
                 <p class="text-muted text-center">Loading mismatch analysis...</p>
             </div>
+            <div id="mismatch-analysis-interpretation-container" class="mt-3 small p-3 bg-light rounded"></div>
         `;
     }
 
     function createFeatureImportanceCardHTML() {
-        return `<div id="feature-importance-chart-container" class="w-100" style="min-height: 400px;"></div>`;
+        return `
+            <div class="row">
+                <div class="col-lg-7">
+                    <div id="feature-importance-chart-container" class="w-100" style="min-height: 400px;"></div>
+                </div>
+                <div class="col-lg-5">
+                    <div id="feature-importance-table-container" class="mt-4"></div>
+                </div>
+            </div>
+            <div id="feature-importance-interpretation-container" class="mt-3 small p-3 bg-light rounded"></div>
+        `;
     }
 
     return Object.freeze({
