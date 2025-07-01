@@ -9,7 +9,7 @@ window.DEFAULT_T2_CRITERIA = Object.freeze({
 
 window.APP_CONFIG = Object.freeze({
     APP_NAME: "Nodal Staging: Avocado Sign vs. T2 Criteria",
-    APP_VERSION: "5.3.0-insights-rebuild",
+    APP_VERSION: "5.4.0-final-review",
     NA_PLACEHOLDER: '—',
     COHORTS: Object.freeze({
         OVERALL: { id: 'Overall', therapyValue: null, displayName: 'Overall' },
@@ -26,7 +26,7 @@ window.APP_CONFIG = Object.freeze({
         STATS_COHORT2: 'neoadjuvantTherapy',
         COMPARISON_VIEW: 'as-vs-t2',
         COMPARISON_STUDY_ID: 'Rutegard_2025',
-        INSIGHTS_VIEW: 'mismatch-analysis',
+        INSIGHTS_VIEW: 'diagnostic-power',
         INSIGHTS_MISMATCH_STUDY_ID: 'Rutegard_2025',
         INSIGHTS_DIAGNOSTIC_POWER_COHORT: 'Overall',
         ACTIVE_TAB_ID: 'publication',
@@ -204,7 +204,7 @@ window.APP_CONFIG = Object.freeze({
         PUBLICATION_TEXTS: Object.freeze({
             MIM_REGULATORY_STATEMENT: "This secondary analysis of a retrospective, single-institution study was compliant with the Health Insurance Portability and Accountability Act and approved by our institutional review board, which waived the requirement for additional written informed consent.",
             STATISTICAL_ANALYSIS_METHODS: "Descriptive statistics were used to summarize patient characteristics. Diagnostic performance metrics—including sensitivity, specificity, positive predictive value, negative predictive value, and accuracy—were calculated. The Wilson score method was used for 95% confidence intervals (CIs) of proportions. For the area under the receiver operating characteristic curve (AUC), CIs were derived using the bootstrap percentile method with 1000 replications.",
-            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.3.0). A two-sided *P* < .05 was considered to indicate statistical significance."
+            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.4.0). A two-sided *P* < .05 was considered to indicate statistical significance."
         }),
         chartTitles: {
             ageDistribution: 'Age Distribution',
@@ -262,6 +262,7 @@ window.APP_CONFIG = Object.freeze({
                 npv: 'A Negative Predictive Value of <strong>{value}</strong> means that if a patient tests negative, there is a <strong>{value}</strong> probability they are truly N-.<br>The 95% CI from <strong>{lower}</strong> to <strong>{upper}</strong>.',
                 acc: 'An Accuracy of <strong>{value}</strong> means the test provided the correct classification for <strong>{value}</strong> of all patients.<br>The 95% CI from <strong>{lower}</strong> to <strong>{upper}</strong>.',
                 auc: 'An AUC of <strong>{value}</strong> indicates a <strong>{strength}</strong> overall ability of the test to discriminate between N+ and N- patients.',
+                dor: 'A DOR of <strong>{value}</strong> indicates that the odds of a positive test result are {value} times higher for patients with the disease than for those without. This represents a <strong>{strength}</strong> discriminatory power.',
                 f1: 'An F1-Score of <strong>{value}</strong> indicates the harmonic mean of PPV and sensitivity. A score of 1.0 is perfect.',
                 pValue: {
                     default: "A P value of {pValue} indicates that {significanceText}. This means there is a {strength} statistical evidence of a difference between {comparison} for the metric '{metric}'.",
@@ -292,7 +293,12 @@ window.APP_CONFIG = Object.freeze({
                     moderate: "moderate",
                     weak: "weak",
                     very_weak: "very weak",
-                    undetermined: "undetermined"
+                    undetermined: "undetermined",
+                    dor_excellent: "excellent",
+                    dor_very_good: "very good",
+                    dor_good: "good",
+                    dor_moderate: "moderate",
+                    dor_poor: "poor"
                 },
                 direction: {
                     increased: "higher",
