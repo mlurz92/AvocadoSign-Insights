@@ -1,295 +1,162 @@
 window.state = (() => {
-    let currentState = {};
-    let defaultState = {};
-    let analysisContext = null;
+    let appState = {};
+    let fullProcessedData = [];
+    let allPublicationStats = {};
+    let mismatchData = {};
 
-    function init() {
-        defaultState = {
+    function _getInitialState() {
+        return {
             currentCohort: window.APP_CONFIG.DEFAULT_SETTINGS.COHORT,
-            dataTableSort: cloneDeep(window.APP_CONFIG.DEFAULT_SETTINGS.DATA_TABLE_SORT),
-            analysisTableSort: cloneDeep(window.APP_CONFIG.DEFAULT_SETTINGS.ANALYSIS_TABLE_SORT),
-            publicationSection: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_SECTION,
-            publicationBruteForceMetric: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC,
-            publicationLang: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_LANG,
+            appliedT2Criteria: getDefaultT2Criteria(),
+            appliedT2Logic: window.APP_CONFIG.DEFAULT_SETTINGS.T2_LOGIC,
+            activeTabId: window.APP_CONFIG.DEFAULT_SETTINGS.ACTIVE_TAB_ID,
+            dataTableSort: { ...window.APP_CONFIG.DEFAULT_SETTINGS.DATA_TABLE_SORT },
+            analysisTableSort: { ...window.APP_CONFIG.DEFAULT_SETTINGS.ANALYSIS_TABLE_SORT },
             statsLayout: window.APP_CONFIG.DEFAULT_SETTINGS.STATS_LAYOUT,
             statsCohort1: window.APP_CONFIG.DEFAULT_SETTINGS.STATS_COHORT1,
             statsCohort2: window.APP_CONFIG.DEFAULT_SETTINGS.STATS_COHORT2,
             comparisonView: window.APP_CONFIG.DEFAULT_SETTINGS.COMPARISON_VIEW,
             comparisonStudyId: window.APP_CONFIG.DEFAULT_SETTINGS.COMPARISON_STUDY_ID,
             insightsView: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_VIEW,
-            insightsPowerStudyId: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_POWER_STUDY_ID,
             insightsMismatchStudyId: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_MISMATCH_STUDY_ID,
-            insightsFeatureImportanceCohort: window.APP_CONFIG.DEFAULT_SETTINGS.COHORT,
-            activeTabId: window.APP_CONFIG.DEFAULT_SETTINGS.ACTIVE_TAB_ID,
+            insightsDiagnosticPowerCohort: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_DIAGNOSTIC_POWER_COHORT,
+            publicationSection: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_SECTION,
+            publicationBruteForceMetric: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC,
+            publicationLang: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_LANG,
             publicationEditMode: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_EDIT_MODE,
-            editedManuscriptHTML: window.APP_CONFIG.DEFAULT_SETTINGS.EDITED_MANUSCRIPT_HTML,
-            mismatchData: null
+            editedManuscriptHTML: window.APP_CONFIG.DEFAULT_SETTINGS.EDITED_MANUSCRIPT_HTML
         };
-
-        const loadedSection = loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION);
-        const isValidSection = window.PUBLICATION_CONFIG.sections.some(s => s.id === loadedSection || (s.subSections && s.subSections.some(sub => sub.id === loadedSection)));
-
-        currentState = {
-            currentCohort: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.CURRENT_COHORT) ?? defaultState.currentCohort,
-            publicationSection: isValidSection ? loadedSection : defaultState.publicationSection,
-            publicationBruteForceMetric: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_BRUTE_FORCE_METRIC) ?? defaultState.publicationBruteForceMetric,
-            publicationLang: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_LANG) ?? defaultState.publicationLang,
-            statsLayout: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_LAYOUT) ?? defaultState.statsLayout,
-            statsCohort1: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT1) ?? defaultState.statsCohort1,
-            statsCohort2: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT2) ?? defaultState.statsCohort2,
-            comparisonView: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.COMPARISON_VIEW) ?? defaultState.comparisonView,
-            comparisonStudyId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.COMPARISON_STUDY_ID) ?? defaultState.comparisonStudyId,
-            insightsView: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_VIEW) ?? defaultState.insightsView,
-            insightsPowerStudyId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_POWER_STUDY_ID) ?? defaultState.insightsPowerStudyId,
-            insightsMismatchStudyId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_MISMATCH_STUDY_ID) ?? defaultState.insightsMismatchStudyId,
-            insightsFeatureImportanceCohort: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_FEATURE_IMPORTANCE_COHORT) ?? defaultState.insightsFeatureImportanceCohort,
-            dataTableSort: cloneDeep(defaultState.dataTableSort),
-            analysisTableSort: cloneDeep(defaultState.analysisTableSort),
-            activeTabId: defaultState.activeTabId,
-            publicationEditMode: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_EDIT_MODE) ?? defaultState.publicationEditMode,
-            editedManuscriptHTML: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.EDITED_MANUSCRIPT_HTML) ?? defaultState.editedManuscriptHTML,
-            mismatchData: defaultState.mismatchData
-        };
-        analysisContext = null;
     }
 
-    function _setter(key, storageKey, newValue) {
-        if (currentState[key] !== newValue) {
-            currentState[key] = newValue;
-            if (storageKey) {
-                saveToLocalStorage(storageKey, newValue);
+    function _saveToLocalStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.error(`Error saving state for key ${key} to localStorage:`, e);
+        }
+    }
+
+    function _loadFromLocalStorage(key, defaultValue) {
+        try {
+            const storedValue = localStorage.getItem(key);
+            if (storedValue === null || storedValue === 'undefined') {
+                return defaultValue;
             }
-            return true;
+            return JSON.parse(storedValue);
+        } catch (e) {
+            console.error(`Error loading state for key ${key} from localStorage:`, e);
+            return defaultValue;
         }
-        return false;
     }
 
-    function getCurrentCohort() { return currentState.currentCohort; }
-    function setCurrentCohort(newCohort) { return _setter('currentCohort', window.APP_CONFIG.STORAGE_KEYS.CURRENT_COHORT, newCohort); }
-
-    function getActiveCohortId() {
-        return analysisContext?.cohortId ?? currentState.currentCohort;
+    function loadState() {
+        const initialState = _getInitialState();
+        appState = {
+            currentCohort: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.CURRENT_COHORT, initialState.currentCohort),
+            appliedT2Criteria: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.APPLIED_CRITERIA, initialState.appliedT2Criteria),
+            appliedT2Logic: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.APPLIED_LOGIC, initialState.appliedT2Logic),
+            activeTabId: _loadFromLocalStorage('avocadoSign_activeTabId_v5.3', initialState.activeTabId),
+            dataTableSort: _loadFromLocalStorage('avocadoSign_dataTableSort_v5.3', initialState.dataTableSort),
+            analysisTableSort: _loadFromLocalStorage('avocadoSign_analysisTableSort_v5.3', initialState.analysisTableSort),
+            statsLayout: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_LAYOUT, initialState.statsLayout),
+            statsCohort1: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT1, initialState.statsCohort1),
+            statsCohort2: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT2, initialState.statsCohort2),
+            comparisonView: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.COMPARISON_VIEW, initialState.comparisonView),
+            comparisonStudyId: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.COMPARISON_STUDY_ID, initialState.comparisonStudyId),
+            insightsView: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_VIEW, initialState.insightsView),
+            insightsMismatchStudyId: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_MISMATCH_STUDY_ID, initialState.insightsMismatchStudyId),
+            insightsDiagnosticPowerCohort: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_DIAGNOSTIC_POWER_COHORT, initialState.insightsDiagnosticPowerCohort),
+            publicationSection: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION, initialState.publicationSection),
+            publicationBruteForceMetric: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_BRUTE_FORCE_METRIC, initialState.publicationBruteForceMetric),
+            publicationLang: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_LANG, initialState.publicationLang),
+            publicationEditMode: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_EDIT_MODE, initialState.publicationEditMode),
+            editedManuscriptHTML: _loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.EDITED_MANUSCRIPT_HTML, initialState.editedManuscriptHTML)
+        };
     }
 
-    function getAnalysisContext() {
-        return analysisContext ? cloneDeep(analysisContext) : null;
-    }
+    const setFullProcessedData = (data) => { fullProcessedData = data; };
+    const getFullProcessedData = () => fullProcessedData;
+    const setAllPublicationStats = (stats) => { allPublicationStats = stats; };
+    const getAllPublicationStats = () => allPublicationStats;
+    const setMismatchData = (data) => { mismatchData = data; };
+    const getMismatchData = () => mismatchData;
 
-    function setAnalysisContext(context) {
-        analysisContext = context ? cloneDeep(context) : null;
-    }
-
-    function clearAnalysisContext() {
-        analysisContext = null;
-    }
-
-    function getDataTableSort() { return cloneDeep(currentState.dataTableSort); }
-    function updateDataTableSort(key, subKey = null) {
-        if (currentState.dataTableSort.key === key && currentState.dataTableSort.subKey === subKey) {
-            currentState.dataTableSort.direction = currentState.dataTableSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentState.dataTableSort = { key, direction: 'asc', subKey };
+    const createSetter = (key, storageKey) => (value) => {
+        appState[key] = value;
+        if (storageKey) {
+            _saveToLocalStorage(storageKey, value);
         }
-        return true;
-    }
+    };
+    
+    const createGetter = (key) => () => appState[key];
+    
+    const setters = {
+        setCurrentCohort: createSetter('currentCohort', window.APP_CONFIG.STORAGE_KEYS.CURRENT_COHORT),
+        setAppliedT2Criteria: createSetter('appliedT2Criteria', window.APP_CONFIG.STORAGE_KEYS.APPLIED_CRITERIA),
+        setAppliedT2Logic: createSetter('appliedT2Logic', window.APP_CONFIG.STORAGE_KEYS.APPLIED_LOGIC),
+        setActiveTabId: createSetter('activeTabId', 'avocadoSign_activeTabId_v5.3'),
+        setDataTableSort: createSetter('dataTableSort', 'avocadoSign_dataTableSort_v5.3'),
+        setAnalysisTableSort: createSetter('analysisTableSort', 'avocadoSign_analysisTableSort_v5.3'),
+        setStatsLayout: createSetter('statsLayout', window.APP_CONFIG.STORAGE_KEYS.STATS_LAYOUT),
+        setStatsCohort1: createSetter('statsCohort1', window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT1),
+        setStatsCohort2: createSetter('statsCohort2', window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT2),
+        setComparisonView: createSetter('comparisonView', window.APP_CONFIG.STORAGE_KEYS.COMPARISON_VIEW),
+        setComparisonStudyId: createSetter('comparisonStudyId', window.APP_CONFIG.STORAGE_KEYS.COMPARISON_STUDY_ID),
+        setInsightsView: createSetter('insightsView', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_VIEW),
+        setInsightsMismatchStudyId: createSetter('insightsMismatchStudyId', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_MISMATCH_STUDY_ID),
+        setInsightsDiagnosticPowerCohort: createSetter('insightsDiagnosticPowerCohort', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_DIAGNOSTIC_POWER_COHORT),
+        setPublicationSection: createSetter('publicationSection', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION),
+        setPublicationBruteForceMetric: createSetter('publicationBruteForceMetric', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_BRUTE_FORCE_METRIC),
+        setPublicationLang: createSetter('publicationLang', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_LANG),
+        setPublicationEditMode: createSetter('publicationEditMode', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_EDIT_MODE),
+        setEditedManuscriptHTML: createSetter('editedManuscriptHTML', window.APP_CONFIG.STORAGE_KEYS.EDITED_MANUSCRIPT_HTML)
+    };
 
-    function getAnalysisTableSort() { return cloneDeep(currentState.analysisTableSort); }
-    function updateAnalysisTableSort(key, subKey = null) {
-        if (currentState.analysisTableSort.key === key && currentState.analysisTableSort.subKey === subKey) {
-            currentState.analysisTableSort.direction = currentState.analysisTableSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentState.analysisTableSort = { key, direction: 'asc', subKey };
-        }
-        return true;
-    }
-
-    function getPublicationSection() { return currentState.publicationSection; }
-    function setPublicationSection(newSectionId) {
-        const isValid = window.PUBLICATION_CONFIG.sections.some(s => s.id === newSectionId || (s.subSections && s.subSections.some(sub => sub.id === newSectionId)));
-        return isValid ? _setter('publicationSection', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_SECTION, newSectionId) : false;
-    }
-
-    function getPublicationBruteForceMetric() { return currentState.publicationBruteForceMetric; }
-    function setPublicationBruteForceMetric(newMetric) {
-        const isValid = window.APP_CONFIG.AVAILABLE_BRUTE_FORCE_METRICS.some(m => m.value === newMetric);
-        return isValid ? _setter('publicationBruteForceMetric', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_BRUTE_FORCE_METRIC, newMetric) : false;
-    }
-
-    function getCurrentPublikationLang() { return currentState.publicationLang; }
-    function setPublicationLang(newLang) {
-        if (newLang === 'en' || newLang === 'de') {
-            return _setter('publicationLang', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_LANG, newLang);
-        }
-        return false;
-    }
-
-    function getStatsLayout() { return currentState.statsLayout; }
-    function setStatsLayout(newLayout) {
-        if (newLayout === 'einzel' || newLayout === 'vergleich') {
-            return _setter('statsLayout', window.APP_CONFIG.STORAGE_KEYS.STATS_LAYOUT, newLayout);
-        }
-        return false;
-    }
-
-    function getStatsCohort1() { return currentState.statsCohort1; }
-    function setStatsCohort1(newCohort) { return _setter('statsCohort1', window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT1, newCohort); }
-
-    function getStatsCohort2() { return currentState.statsCohort2; }
-    function setStatsCohort2(newCohort) { return _setter('statsCohort2', window.APP_CONFIG.STORAGE_KEYS.STATS_COHORT2, newCohort); }
-
-    function getComparisonView() { return currentState.comparisonView; }
-    function setComparisonView(newView) {
-        if (newView !== 'as-pur' && newView !== 'as-vs-t2') return false;
+    const getters = {
+        getCurrentCohort: createGetter('currentCohort'),
+        getAppliedT2Criteria: createGetter('appliedT2Criteria'),
+        getAppliedT2Logic: createGetter('appliedT2Logic'),
+        getActiveTabId: createGetter('activeTabId'),
+        getDataTableSort: createGetter('dataTableSort'),
+        getAnalysisTableSort: createGetter('analysisTableSort'),
+        getStatsLayout: createGetter('statsLayout'),
+        getStatsCohort1: createGetter('statsCohort1'),
+        getStatsCohort2: createGetter('statsCohort2'),
+        getComparisonView: createGetter('comparisonView'),
+        getComparisonStudyId: createGetter('comparisonStudyId'),
+        getInsightsView: createGetter('insightsView'),
+        getInsightsMismatchStudyId: createGetter('insightsMismatchStudyId'),
+        getInsightsDiagnosticPowerCohort: createGetter('insightsDiagnosticPowerCohort'),
+        getPublicationSection: createGetter('publicationSection'),
+        getPublicationBruteForceMetric: createGetter('publicationBruteForceMetric'),
+        getPublicationLang: createGetter('publicationLang'),
+        getPublicationEditMode: createGetter('publicationEditMode'),
+        getEditedManuscriptHTML: createGetter('editedManuscriptHTML')
+    };
+    
+    function updateSort(tableType, key, subKey = null) {
+        const sortState = tableType === 'data' ? getters.getDataTableSort() : getters.getAnalysisTableSort();
+        const setSortState = tableType === 'data' ? setters.setDataTableSort : setters.setAnalysisTableSort;
         
-        const viewChanged = _setter('comparisonView', window.APP_CONFIG.STORAGE_KEYS.COMPARISON_VIEW, newView);
-        let studyIdChanged = false;
-
-        if (newView === 'as-pur') {
-            clearAnalysisContext();
-        } else if (newView === 'as-vs-t2') {
-            if (currentState.comparisonStudyId === null || currentState.comparisonStudyId === window.APP_CONFIG.SPECIAL_IDS.APPLIED_CRITERIA_STUDY_ID) {
-                studyIdChanged = setComparisonStudyId(window.APP_CONFIG.DEFAULT_SETTINGS.COMPARISON_STUDY_ID);
-            }
-            const studySet = window.studyT2CriteriaManager.getStudyCriteriaSetById(currentState.comparisonStudyId);
-            if (studySet?.applicableCohort) {
-                setAnalysisContext({ cohortId: studySet.applicableCohort, criteriaName: studySet.name });
-            } else if (currentState.comparisonStudyId && currentState.comparisonStudyId.startsWith('bf_')) {
-                 const cohortId = currentState.comparisonStudyId.split('_')[1];
-                 setAnalysisContext({ cohortId: cohortId, criteriaName: `Best Case T2 (${getCohortDisplayName(cohortId)})` });
-            } else {
-                clearAnalysisContext();
-            }
+        let newDirection = 'asc';
+        if (sortState.key === key && sortState.subKey === subKey) {
+            newDirection = sortState.direction === 'asc' ? 'desc' : 'asc';
         }
         
-        return viewChanged || studyIdChanged;
+        setSortState({ key: key, direction: newDirection, subKey: subKey });
     }
-
-    function getComparisonStudyId() { return currentState.comparisonStudyId; }
-    function setComparisonStudyId(newStudyId) {
-        const isDynamicBfId = newStudyId && newStudyId.startsWith('bf_');
-        const isStaticStudyId = !!window.studyT2CriteriaManager.getStudyCriteriaSetById(newStudyId);
-
-        if (!newStudyId || (!isDynamicBfId && !isStaticStudyId)) {
-            newStudyId = window.APP_CONFIG.DEFAULT_SETTINGS.COMPARISON_STUDY_ID;
-        }
-
-        const studyIdChanged = _setter('comparisonStudyId', window.APP_CONFIG.STORAGE_KEYS.COMPARISON_STUDY_ID, newStudyId);
-
-        if (studyIdChanged) {
-            if (isStaticStudyId) {
-                const studySet = window.studyT2CriteriaManager.getStudyCriteriaSetById(newStudyId);
-                if (studySet?.applicableCohort) {
-                    setAnalysisContext({ cohortId: studySet.applicableCohort, criteriaName: studySet.name });
-                } else {
-                    clearAnalysisContext();
-                }
-            } else if (isDynamicBfId) {
-                const cohortId = newStudyId.split('_')[1];
-                setAnalysisContext({ cohortId: cohortId, criteriaName: `Best Case T2 (${getCohortDisplayName(cohortId)})` });
-            } else {
-                clearAnalysisContext();
-            }
-        }
-        return studyIdChanged;
-    }
-
-    function getActiveTabId() { return currentState.activeTabId; }
-    function setActiveTabId(newTabId) {
-        if (typeof newTabId === 'string' && currentState.activeTabId !== newTabId) {
-            currentState.activeTabId = newTabId;
-            if (newTabId !== 'comparison' && newTabId !== 'insights') {
-                clearAnalysisContext();
-            }
-            if (newTabId !== 'publication' && getPublicationEditMode()) {
-                setPublicationEditMode(false);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    function getPublicationEditMode() { return currentState.publicationEditMode; }
-    function setPublicationEditMode(newMode) {
-        return _setter('publicationEditMode', window.APP_CONFIG.STORAGE_KEYS.PUBLICATION_EDIT_MODE, !!newMode);
-    }
-
-    function getEditedManuscriptHTML() { return currentState.editedManuscriptHTML; }
-    function setEditedManuscriptHTML(html) {
-        return _setter('editedManuscriptHTML', window.APP_CONFIG.STORAGE_KEYS.EDITED_MANUSCRIPT_HTML, html);
-    }
-
-    function resetEditedManuscriptHTML() {
-        currentState.editedManuscriptHTML = null;
-        localStorage.removeItem(window.APP_CONFIG.STORAGE_KEYS.EDITED_MANUSCRIPT_HTML);
-        return true;
-    }
-    
-    function getInsightsView() { return currentState.insightsView; }
-    function setInsightsView(newView) { return _setter('insightsView', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_VIEW, newView); }
-
-    function getInsightsPowerStudyId() { return currentState.insightsPowerStudyId; }
-    function setInsightsPowerStudyId(newStudyId) { return _setter('insightsPowerStudyId', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_POWER_STUDY_ID, newStudyId); }
-
-    function getInsightsMismatchStudyId() { return currentState.insightsMismatchStudyId; }
-    function setInsightsMismatchStudyId(newStudyId) { return _setter('insightsMismatchStudyId', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_MISMATCH_STUDY_ID, newStudyId); }
-
-    function getInsightsFeatureImportanceCohort() { return currentState.insightsFeatureImportanceCohort; }
-    function setInsightsFeatureImportanceCohort(newCohort) {
-        const isValid = Object.values(window.APP_CONFIG.COHORTS).some(c => c.id === newCohort);
-        return isValid ? _setter('insightsFeatureImportanceCohort', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_FEATURE_IMPORTANCE_COHORT, newCohort) : false;
-    }
-    
-    function getMismatchData() { return currentState.mismatchData; }
-    function setMismatchData(data) {
-        currentState.mismatchData = data;
-        return true;
-    }
-
 
     return Object.freeze({
-        init,
-        getCurrentCohort,
-        setCurrentCohort,
-        getActiveCohortId,
-        getAnalysisContext,
-        setAnalysisContext,
-        clearAnalysisContext,
-        getDataTableSort,
-        updateDataTableSort,
-        getAnalysisTableSort,
-        updateAnalysisTableSort,
-        getPublicationSection,
-        setPublicationSection,
-        getPublicationBruteForceMetric,
-        setPublicationBruteForceMetric,
-        getCurrentPublikationLang,
-        setPublicationLang,
-        getStatsLayout,
-        setStatsLayout,
-        getStatsCohort1,
-        setStatsCohort1,
-        getStatsCohort2,
-        setStatsCohort2,
-        getComparisonView,
-        setComparisonView,
-        getComparisonStudyId,
-        setComparisonStudyId,
-        getActiveTabId,
-        setActiveTabId,
-        getPublicationEditMode,
-        setPublicationEditMode,
-        getEditedManuscriptHTML,
-        setEditedManuscriptHTML,
-        resetEditedManuscriptHTML,
-        getInsightsView,
-        setInsightsView,
-        getInsightsPowerStudyId,
-        setInsightsPowerStudyId,
-        getInsightsMismatchStudyId,
-        setInsightsMismatchStudyId,
-        getInsightsFeatureImportanceCohort,
-        setInsightsFeatureImportanceCohort,
-        getMismatchData,
-        setMismatchData
+        loadState,
+        ...setters,
+        ...getters,
+        updateSort,
+        setFullProcessedData,
+        getFullProcessedData,
+        setAllPublicationStats,
+        getAllPublicationStats,
+        setMismatchData,
+        getMismatchData
     });
+
 })();
