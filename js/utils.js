@@ -470,3 +470,159 @@ function getT2IconSVG(type, value) {
     }
     return `<svg class="icon-t2 icon-${type}" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${type}: ${value || 'unknown'}">${svgContent}</svg>`;
 }
+
+function cloneDeep(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    if (obj instanceof Date) {
+        return new Date(obj.getTime());
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => cloneDeep(item));
+    }
+    const newObj = {};
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            newObj[key] = cloneDeep(obj[key]);
+        }
+    }
+    return newObj;
+}
+
+function escapeHTML(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[match];
+    });
+}
+
+function formatNumber(value, digits = 2, na_placeholder = window.APP_CONFIG.NA_PLACEHOLDER, forceDigits = false) {
+    if (value === null || value === undefined || isNaN(value)) {
+        return na_placeholder;
+    }
+    const num = Number(value);
+    if (!isFinite(num)) {
+        return na_placeholder;
+    }
+    const fixed = num.toFixed(digits);
+    return forceDigits ? fixed : parseFloat(fixed).toString();
+}
+
+function formatPercent(value, digits = 1, na_placeholder = window.APP_CONFIG.NA_PLACEHOLDER) {
+    if (value === null || value === undefined || isNaN(value)) {
+        return na_placeholder;
+    }
+    const num = Number(value);
+    if (!isFinite(num)) {
+        return na_placeholder;
+    }
+    return `${(num * 100).toFixed(digits)}%`;
+}
+
+function formatCI(value, lower, upper, digits = 2, isPercent = false, na_placeholder = window.APP_CONFIG.NA_PLACEHOLDER) {
+    const formatter = isPercent ? (v, d) => formatPercent(v, d, na_placeholder) : (v, d) => formatNumber(v, d, na_placeholder);
+    const valStr = formatter(value, digits);
+    const lowerStr = formatter(lower, digits);
+    const upperStr = formatter(upper, digits);
+    if (valStr === na_placeholder) {
+        return na_placeholder;
+    }
+    if (lowerStr === na_placeholder || upperStr === na_placeholder) {
+        return valStr;
+    }
+    return `${valStr} (95% CI: ${lowerStr}–${upperStr})`;
+}
+
+function formatPValueForPublication(pValue, significanceLevel = window.APP_CONFIG.STATISTICAL_CONSTANTS.SIGNIFICANCE_LEVEL) {
+    if (pValue === null || pValue === undefined || isNaN(pValue)) {
+        return "P = n.s.";
+    }
+    if (pValue < 0.001) {
+        return "P < .001";
+    }
+    if (pValue < significanceLevel) {
+        return `P = ${pValue.toFixed(3).replace(/^0+/, '')}`;
+    }
+    return "P = n.s.";
+}
+
+function formatValueForPublication(value, digits = 2, isPercent = false, forceLeadingZero = false) {
+    const formatted = isPercent ? formatPercent(value, digits) : formatNumber(value, digits);
+    if (forceLeadingZero && formatted.startsWith('.')) {
+        return `0${formatted}`;
+    }
+    return formatted;
+}
+
+function formatMetricForPublication(metricObject, metricKey, options = { includeCI: false }) {
+    if (!metricObject || !isFinite(metricObject.value)) return window.APP_CONFIG.NA_PLACEHOLDER;
+    const isPercent = ['sens', 'spec', 'ppv', 'npv', 'acc'].includes(metricKey);
+    const digits = (metricKey === 'auc' || metricKey === 'dor' || metricKey === 'or') ? 2 : 1;
+    const forceLeadingZero = (metricKey === 'auc');
+    
+    if (options.includeCI && metricObject.ci && isFinite(metricObject.ci.lower) && isFinite(metricObject.ci.upper)) {
+        const valStr = formatValueForPublication(metricObject.value, digits, isPercent, forceLeadingZero);
+        const lowerStr = formatValueForPublication(metricObject.ci.lower, digits, isPercent, forceLeadingZero);
+        const upperStr = formatValueForPublication(metricObject.ci.upper, digits, isPercent, forceLeadingZero);
+        return `${valStr} (95% CI: ${lowerStr}–${upperStr})`;
+    }
+    return formatValueForPublication(metricObject.value, digits, isPercent, forceLeadingZero);
+}
+
+function getT2IconSVG(criterion, value) {
+    const settings = window.APP_CONFIG.UI_SETTINGS;
+    const s = settings.ICON_SIZE;
+    const sw = settings.ICON_STROKE_WIDTH;
+    const c = s / 2;
+    const r = (s - sw) / 2 - 1;
+    const sq = s * 0.7;
+    const sqPos = (s - sq) / 2;
+
+    const iconKey = `${criterion.toUpperCase()}_${value.toUpperCase()}`;
+    const generator = window.APP_CONFIG.T2_ICON_SVGS[iconKey] || window.APP_CONFIG.T2_ICON_SVGS['UNKNOWN'];
+    
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" class="t2-icon">${generator(s, sw, settings.ICON_COLOR, c, r, sq, sqPos)}</svg>`;
+}
+
+function getCohortDisplayName(cohortId) {
+    const cohortConfig = Object.values(window.APP_CONFIG.COHORTS).find(c => c.id === cohortId);
+    return cohortConfig ? cohortConfig.displayName : cohortId;
+}
+
+function getDORStrength(dorValue) {
+    if (!isFinite(dorValue) || dorValue <= 0) return 'undetermined';
+    if (dorValue > 25) return 'dor_excellent';
+    if (dorValue > 10) return 'dor_very_good';
+    if (dorValue > 5) return 'dor_good';
+    if (dorValue > 2) return 'dor_moderate';
+    return 'dor_poor';
+}
+
+function getInterpretationText(templateKey, replacements = {}) {
+    const templatePath = `tooltips.interpretation.${templateKey}`;
+    const pathParts = templatePath.split('.');
+    let template = window.APP_CONFIG.UI_TEXTS;
+    for (const part of pathParts) {
+        template = template?.[part];
+        if (template === undefined) return `Template not found: ${templateKey}`;
+    }
+    
+    if (typeof template !== 'string') {
+        if(templateKey === 'dor' && typeof template === 'object') {
+             template = template.value;
+        } else {
+            return `Invalid template for key: ${templateKey}`;
+        }
+    }
+
+    return template.replace(/{(\w+)}/g, (placeholder, key) => {
+        return replacements.hasOwnProperty(key) ? escapeHTML(String(replacements[key])) : placeholder;
+    });
+}
