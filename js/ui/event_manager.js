@@ -1,297 +1,346 @@
 window.eventManager = (() => {
-    let app;
+    let appContainer;
+    let debouncedResize;
+    let debounceTimer;
 
-    const debouncedUpdateSizeInput = debounce(value => {
-        if (window.t2CriteriaManager.updateCriterionThreshold(value)) {
-            if (!window.t2CriteriaManager.getCurrentCriteria().size?.active) {
-                window.t2CriteriaManager.toggleCriterionActive('size', true);
+    function _debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+
+    function _handleTabClick(target) {
+        const tabId = target.dataset.bsTarget.substring(1);
+        if (tabId !== window.state.getActiveTabId()) {
+            window.state.setActiveTabId(tabId);
+            window.ui.renderApp();
+        }
+    }
+
+    function _handleCohortChange(target) {
+        const newCohort = target.value;
+        if (newCohort !== window.state.getCurrentCohort()) {
+            window.state.setCurrentCohort(newCohort);
+            window.ui.renderApp();
+        }
+    }
+
+    function _handleSortClick(target) {
+        const headerCell = target.closest('th');
+        if (!headerCell) return;
+        
+        const table = headerCell.closest('table');
+        if (!table) return;
+
+        const tableType = table.id.includes('data-table') ? 'data' : 'analysis';
+        const key = headerCell.dataset.sortKey;
+        const subKey = headerCell.dataset.sortSubKey || null;
+
+        if (key) {
+            window.state.updateSort(tableType, key, subKey);
+            window.ui.renderApp();
+        }
+    }
+
+    function _handleExpandRowClick(target) {
+        const row = target.closest('tr');
+        if (row && row.dataset.patientId) {
+            const detailRowId = `details-for-${row.dataset.patientId}`;
+            const detailRow = document.getElementById(detailRowId);
+            if (detailRow) {
+                const isExpanded = row.classList.toggle('expanded');
+                detailRow.classList.toggle('d-none', !isExpanded);
+                target.classList.toggle('expanded', isExpanded);
             }
-            window.uiManager.updateT2CriteriaControlsUI(window.t2CriteriaManager.getCurrentCriteria(), window.t2CriteriaManager.getCurrentLogic());
-            window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
         }
-    }, window.APP_CONFIG.PERFORMANCE_SETTINGS.DEBOUNCE_DELAY_MS);
+    }
+
+    function _handleExpandAllClick(target) {
+        const table = target.closest('.card').querySelector('table');
+        if (!table) return;
+
+        const isExpanding = !target.classList.contains('expanded');
+        target.classList.toggle('expanded', isExpanding);
+        target.innerHTML = isExpanding ? '<i class="fas fa-minus-square"></i>' : '<i class="fas fa-plus-square"></i>';
+        
+        const detailRows = table.querySelectorAll('tr.detail-row');
+        const parentRows = table.querySelectorAll('tr[data-patient-id]');
+        const expandButtons = table.querySelectorAll('.expand-button');
+
+        detailRows.forEach(row => row.classList.toggle('d-none', !isExpanding));
+        parentRows.forEach(row => row.classList.toggle('expanded', isExpanding));
+        expandButtons.forEach(btn => btn.classList.toggle('expanded', isExpanding));
+    }
+
+    function _handleT2CriteriaChange() {
+        window.ui.updateT2CriteriaUIState();
+    }
     
-    const debouncedUpdateWordCount = debounce(() => {
-        if(window.publicationTab) {
-            window.publicationTab.renderWordCounts();
-        }
-    }, 500);
+    function _handleApplyT2Criteria() {
+        const criteria = window.ui.readT2CriteriaFromUI();
+        window.state.setAppliedT2Criteria(criteria.criteria);
+        window.state.setAppliedT2Logic(criteria.logic);
+        window.ui.showToast('T2 criteria applied and saved.');
+        window.ui.renderApp();
+    }
+    
+    function _handleResetT2Criteria() {
+        window.ui.resetT2CriteriaControls();
+    }
 
-    const debouncedPowerAnalysisRender = debounce(() => {
-        if (window.insightsTab) {
-            window.insightsTab.renderPowerAnalysis(app.allPublicationStats);
+    function _handlePublicationNavClick(target) {
+        const sectionId = target.dataset.sectionId;
+        if (sectionId && sectionId !== window.state.getPublicationSection()) {
+            window.state.setPublicationSection(sectionId);
+            window.ui.renderPublicationTab();
         }
-    }, 350);
-
-    function init(appInstance) {
-        app = appInstance;
-        document.body.addEventListener('click', handleBodyClick);
-        document.body.addEventListener('change', handleBodyChange);
-        document.body.addEventListener('input', handleBodyInput);
-        const mainTabEl = document.getElementById('main-tabs');
-        if (mainTabEl) {
-            mainTabEl.addEventListener('shown.bs.tab', handleTabShown);
+    }
+    
+    function _handleBruteForceMetricChange(target) {
+        const newMetric = target.value;
+        if (newMetric !== window.state.getPublicationBruteForceMetric()) {
+            window.state.setPublicationBruteForceMetric(newMetric);
+            window.ui.renderPublicationTab();
+        }
+    }
+    
+    function _handlePublicationEditToggle(target) {
+        const isEditing = target.checked;
+        if(isEditing !== window.state.getPublicationEditMode()){
+            window.state.setPublicationEditMode(isEditing);
+            window.ui.renderPublicationTab();
+        }
+    }
+    
+    function _handlePublicationSave() {
+        const editor = document.getElementById('publication-content-editor');
+        if(editor){
+            window.state.setEditedManuscriptHTML(editor.innerHTML);
+            window.state.setPublicationEditMode(false);
+            window.ui.renderPublicationTab();
+            window.ui.showToast('Manuscript changes saved.');
         }
     }
 
-    function handleTabShown(event) {
-        if (event.target?.id) {
-            app.processTabChange(event.target.id.replace('-tab', ''));
+    function _handleStatsLayoutChange(target) {
+        const newLayout = target.value;
+        if (newLayout !== window.state.getStatsLayout()) {
+            window.state.setStatsLayout(newLayout);
+            window.ui.renderStatisticsTab();
+        }
+    }
+    
+    function _handleComparisonViewChange(target) {
+        const newView = target.value;
+        if (newView !== window.state.getComparisonView()) {
+            window.state.setComparisonView(newView);
+            window.ui.renderComparisonTab();
+        }
+    }
+    
+    function _handleComparisonStudyChange(target) {
+        const newStudyId = target.value;
+        if (newStudyId !== window.state.getComparisonStudyId()) {
+            window.state.setComparisonStudyId(newStudyId);
+            window.ui.renderComparisonTab();
         }
     }
 
-    function handleBodyClick(event) {
-        const target = event.target;
-        const button = target.closest('button');
-
-        if (button?.dataset.cohort && !button.disabled && !button.dataset.action) {
-            app.handleCohortChange(button.dataset.cohort, "user");
-            return;
+    function _handleStartBruteForce() {
+        const metric = document.getElementById('brute-force-metric')?.value;
+        if(metric) {
+            window.bruteForceManager.start(window.state.getCurrentCohort(), metric);
         }
+    }
 
-        if (target.closest('th[data-sort-key]')) {
-            const header = target.closest('th[data-sort-key]');
-            const subHeader = target.closest('.sortable-sub-header');
-            handleSortClick(header, subHeader);
-            return;
-        }
+    function _handleCancelBruteForce() {
+        window.bruteForceManager.cancel();
+    }
+    
+    function _handleShowBruteForceDetails() {
+        const cohortId = window.state.getCurrentCohort();
+        const metric = document.getElementById('brute-force-metric')?.value;
+        const resultsData = window.bruteForceManager.getResults(cohortId, metric);
 
-        if (target.closest('.publication-section-link')) {
-            event.preventDefault();
-            app.handlePublicationSectionChange(target.closest('.publication-section-link').dataset.sectionId);
-            return;
+        if(resultsData) {
+            const modalBody = window.uiComponents.createBruteForceModalContent(resultsData);
+            window.ui.showModal('Brute-Force Top Results', modalBody, 'modal-xl');
+        } else {
+            window.ui.showToast('No results available for this metric and cohort.', 'error');
         }
+    }
+    
+    function _handleApplyBestBruteForceCriteria(target) {
+        const cohortId = window.state.getCurrentCohort();
+        const metric = target.dataset.metric;
+        const resultsData = window.bruteForceManager.getResults(cohortId, metric);
+        if (resultsData && resultsData.bestResult) {
+            window.ui.setT2CriteriaControls(resultsData.bestResult.criteria, resultsData.bestResult.logic);
+            window.ui.showToast(`Best criteria for '${metric}' loaded into panel.`);
+        } else {
+            window.ui.showToast('No saved best result to apply.', 'error');
+        }
+    }
+
+    function _handleApplySavedBruteForceCriteria(target) {
+        const cohortId = target.dataset.cohort;
+        const metric = target.dataset.metric;
+        const bfResult = window.bruteForceManager.getAllResults()?.[cohortId]?.[metric];
         
-        const mismatchCell = target.closest('.mismatch-cell[data-action="show-mismatch-details"]');
-        if (mismatchCell) {
-            app.showMismatchDetails(mismatchCell.dataset.mismatchKey);
+        if (bfResult && bfResult.bestResult) {
+            window.state.setAppliedT2Criteria(bfResult.bestResult.criteria);
+            window.state.setAppliedT2Logic(bfResult.bestResult.logic);
+            window.ui.renderApp();
+            window.ui.showToast(`Saved optimal criteria for '${metric}' in '${getCohortDisplayName(cohortId)}' cohort have been applied.`);
+        } else {
+            window.ui.showToast('Could not find saved criteria to apply.', 'error');
+        }
+    }
+
+    function _handleInsightsViewChange(target) {
+        const newView = target.value;
+        if (newView !== window.state.getInsightsView()) {
+            window.state.setInsightsView(newView);
+            window.insightsTab.renderView(window.state.getAllPublicationStats(), window.state.getFullProcessedData());
+            window.ui.initializeTooltips();
+        }
+    }
+    
+    function _handleInsightsMismatchStudyChange(target) {
+        const newStudyId = target.value;
+        if (newStudyId !== window.state.getInsightsMismatchStudyId()) {
+            window.state.setInsightsMismatchStudyId(newStudyId);
+            window.insightsTab.renderMismatchAnalysis(window.state.getAllPublicationStats(), window.state.getFullProcessedData());
+            window.ui.initializeTooltips();
+        }
+    }
+    
+    function _handleInsightsDiagnosticPowerCohortChange(target) {
+        const newCohort = target.value;
+        if (newCohort !== window.state.getInsightsDiagnosticPowerCohort()) {
+            window.state.setInsightsDiagnosticPowerCohort(newCohort);
+            window.insightsTab.renderDiagnosticPowerAnalysis(window.state.getAllPublicationStats());
+        }
+    }
+
+    function _handleMismatchDetailsClick(target) {
+        const mismatchKey = target.dataset.mismatchKey;
+        const mismatchData = window.state.getMismatchData();
+        if(!mismatchData || !mismatchData[mismatchKey]) return;
+
+        const patientData = mismatchData[mismatchKey];
+        if(patientData.length === 0) {
+            window.ui.showToast('No patients in this category.', 'info');
             return;
         }
 
-        if (!button || button.disabled) return;
-        
-        if (button.dataset.action === 'apply-saved-bf') {
-            app.applyBestBruteForceCriteria(button.dataset.metric, button.dataset.cohort);
+        const title = target.querySelector('.mismatch-label').textContent || 'Patient Details';
+        const modalBody = window.ui.createPatientDetailTableHTML(patientData);
+        window.ui.showModal(title, modalBody, 'modal-lg');
+    }
+
+    function _handleExportClick(target) {
+        const exportType = target.id.replace('btn-export-', '');
+        window.exporter.export(exportType, window.state.getAllPublicationStats(), commonData.getPublicationData());
+    }
+
+    function init() {
+        appContainer = document.getElementById('app-container');
+        if (!appContainer) {
+            console.error("App container not found. Event listeners cannot be attached.");
             return;
         }
 
-        const singleClickActions = {
-            'btn-quick-guide': () => window.uiManager.showQuickGuide(),
-            'data-toggle-details': () => window.uiManager.toggleAllDetails('data-table-body', button.id),
-            'analysis-toggle-details': () => window.uiManager.toggleAllDetails('analysis-table-body', button.id),
-            'btn-reset-criteria': () => {
-                window.t2CriteriaManager.resetCriteria();
-                window.uiManager.updateT2CriteriaControlsUI(window.t2CriteriaManager.getCurrentCriteria(), window.t2CriteriaManager.getCurrentLogic());
-                window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
-                window.uiManager.showToast('T2 criteria have been reset to default.', 'info');
-            },
-            'btn-apply-criteria': () => app.applyAndRefreshAll(),
-            'btn-start-brute-force': () => app.startBruteForceAnalysis(),
-            'btn-cancel-brute-force': () => window.bruteForceManager.cancelAnalysis(),
-            'btn-apply-best-bf-criteria': () => {
-                if (button.dataset.metric) {
-                    app.applyBestBruteForceCriteria(button.dataset.metric);
+        debouncedResize = _debounce(() => {
+            if (window.state.getActiveTabId() === 'statistics' || window.state.getActiveTabId() === 'insights') {
+                window.ui.renderApp();
+            }
+        }, window.APP_CONFIG.PERFORMANCE_SETTINGS.DEBOUNCE_DELAY_MS);
+        window.addEventListener('resize', debouncedResize);
+
+        appContainer.addEventListener('click', (e) => {
+            const target = e.target;
+            const link = target.closest('a.nav-link[data-bs-toggle="tab"]');
+            const sorter = target.closest('th[data-sort-key]');
+            const expandButton = target.closest('.expand-button');
+            const expandAllButton = target.closest('.expand-all-button');
+            const pubNavLink = target.closest('.publication-section-link');
+            const savePubButton = target.closest('#btn-save-publication');
+            const applyCriteriaButton = target.closest('#btn-apply-criteria');
+            const resetCriteriaButton = target.closest('#btn-reset-criteria');
+            const startBfButton = target.closest('#btn-start-brute-force');
+            const cancelBfButton = target.closest('#btn-cancel-brute-force');
+            const showBfDetailsButton = target.closest('#btn-show-bf-details');
+            const applyBestBfButton = target.closest('#btn-apply-best-bf-criteria');
+            const applySavedBfButton = target.closest('[data-action="apply-saved-bf"]');
+            const mismatchCell = target.closest('[data-action="show-mismatch-details"]');
+            const exportButton = target.closest('[id^="btn-export-"]');
+            const rowWithDetails = target.closest('tr[data-patient-id]');
+
+            if (link) { e.preventDefault(); _handleTabClick(link); return; }
+            if (sorter) { _handleSortClick(sorter); return; }
+            if (expandButton) { _handleExpandRowClick(expandButton); return; }
+            if (expandAllButton) { _handleExpandAllClick(expandAllButton); return; }
+            if (pubNavLink) { e.preventDefault(); _handlePublicationNavClick(pubNavLink); return; }
+            if (savePubButton) { _handlePublicationSave(); return; }
+            if (applyCriteriaButton) { _handleApplyT2Criteria(); return; }
+            if (resetCriteriaButton) { _handleResetT2Criteria(); return; }
+            if (startBfButton) { _handleStartBruteForce(); return; }
+            if (cancelBfButton) { _handleCancelBruteForce(); return; }
+            if (showBfDetailsButton) { _handleShowBruteForceDetails(); return; }
+            if (applyBestBfButton) { _handleApplyBestBruteForceCriteria(applyBestBfButton); return; }
+            if (applySavedBfButton) { _handleApplySavedBruteForceCriteria(applySavedBfButton); return; }
+            if (mismatchCell) { _handleMismatchDetailsClick(mismatchCell); return; }
+            if (exportButton) { _handleExportClick(exportButton); return; }
+            if (rowWithDetails) {
+                const button = rowWithDetails.querySelector('.expand-button');
+                if (button && !target.closest('a, button')) {
+                    _handleExpandRowClick(button);
+                    return;
                 }
-            },
-            'btn-show-bf-details': () => {
-                 const metricSelect = document.getElementById('brute-force-metric');
-                 if (metricSelect) app.showBruteForceDetails(metricSelect.value);
-            },
-            'statistics-toggle-single': () => handleStatsLayoutToggle('einzel'),
-            'statistics-toggle-comparison': () => handleStatsLayoutToggle('vergleich'),
-            'btn-export-manuscript-md': () => app.exportManuscript(),
-            'btn-export-tables-md': () => app.exportTables(),
-            'btn-export-charts-svg': () => app.exportCharts(),
-            'btn-edit-publication': () => handlePublicationEditStart(),
-            'btn-save-publication': () => handlePublicationSave(),
-            'btn-reset-publication': () => handlePublicationReset()
-        };
-
-        if (singleClickActions[button.id]) {
-            singleClickActions[button.id]();
-            return;
-        }
-        
-        if (button.classList.contains('t2-criteria-button')) {
-            if (window.t2CriteriaManager.updateCriterionValue(button.dataset.criterion, button.dataset.value)) {
-                window.uiManager.updateT2CriteriaControlsUI(window.t2CriteriaManager.getCurrentCriteria(), window.t2CriteriaManager.getCurrentLogic());
-                window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
             }
-            return;
-        }
-    }
+        });
 
-    function handleBodyChange(event) {
-        const target = event.target;
-        if (target.classList.contains('criteria-checkbox')) {
-            handleT2CheckboxChange(target);
-            return;
-        }
-        
-        const changeActions = {
-            't2-logic-switch': () => handleT2LogicChange(target),
-            'brute-force-metric': () => app.refreshCurrentTab(),
-            'statistics-cohort-select-1': () => handleStatsCohortChange(target),
-            'statistics-cohort-select-2': () => handleStatsCohortChange(target),
-            'comp-study-select': () => handleComparisonStudyChange(target.value),
-            'publication-bf-metric-select': () => handlePublicationBfMetricChange(target.value),
-            'power-analysis-study-select': () => handlePowerAnalysisStudyChange(target.value),
-            'mismatch-analysis-study-select': () => handleMismatchAnalysisStudyChange(target.value),
-            'feature-importance-cohort-select': () => handleFeatureImportanceCohortChange(target.value),
-            'power-mode-posthoc': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats),
-            'power-mode-samplesize': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats)
-        };
-        
-        if (changeActions[target.id]) {
-            changeActions[target.id]();
-            return;
-        }
+        appContainer.addEventListener('change', (e) => {
+            const target = e.target;
+            const cohortSelect = target.closest('.cohort-select');
+            const criteriaCheckbox = target.closest('.criteria-checkbox');
+            const pubBfMetricSelect = target.closest('#publication-bf-metric-select');
+            const pubEditToggle = target.closest('#publication-edit-toggle');
+            const statsLayoutRadio = target.closest('input[name="statsLayout"]');
+            const comparisonViewRadio = target.closest('input[name="comparisonView"]');
+            const comparisonStudySelect = target.closest('#comparison-study-select');
+            const insightsViewRadio = target.closest('input[name="insightsView"]');
+            const insightsMismatchSelect = target.closest('#mismatch-analysis-study-select');
+            const insightsPowerCohortSelect = target.closest('#diagnostic-power-cohort-select');
 
-        if (target.name === 'comparisonView') {
-            handleComparisonViewChange(target.value);
-            return;
-        }
-        if (target.name === 'insightsView') {
-            handleInsightsViewChange(target.value);
-            return;
-        }
-    }
+            if (cohortSelect) { _handleCohortChange(cohortSelect); return; }
+            if (criteriaCheckbox) { _handleT2CriteriaChange(); return; }
+            if (pubBfMetricSelect) { _handleBruteForceMetricChange(pubBfMetricSelect); return; }
+            if (pubEditToggle) { _handlePublicationEditToggle(pubEditToggle); return; }
+            if (statsLayoutRadio) { _handleStatsLayoutChange(statsLayoutRadio); return; }
+            if (comparisonViewRadio) { _handleComparisonViewChange(comparisonViewRadio); return; }
+            if (comparisonStudySelect) { _handleComparisonStudyChange(comparisonStudySelect); return; }
+            if (insightsViewRadio) { _handleInsightsViewChange(insightsViewRadio); return; }
+            if (insightsMismatchSelect) { _handleInsightsMismatchStudyChange(insightsMismatchSelect); return; }
+            if (insightsPowerCohortSelect) { _handleInsightsDiagnosticPowerCohortChange(insightsPowerCohortSelect); return; }
+        });
 
-    function handleBodyInput(event) {
-        const target = event.target;
-        if (target.id === 'range-size' || target.id === 'input-size') {
-            const sizeValueDisplay = document.getElementById('value-size');
-            const sizeRangeInput = document.getElementById('range-size');
-            const sizeManualInput = document.getElementById('input-size');
-            const newValue = formatNumber(target.value, 1, '', true);
-
-            if (target.id === 'range-size') {
-                if(sizeValueDisplay) sizeValueDisplay.textContent = formatNumber(newValue, 1);
-                if(sizeManualInput) sizeManualInput.value = newValue;
-            } else {
-                if(sizeValueDisplay) sizeValueDisplay.textContent = formatNumber(newValue, 1);
-                if(sizeRangeInput) sizeRangeInput.value = parseFloat(newValue);
+        appContainer.addEventListener('input', (e) => {
+            const target = e.target;
+            const criteriaControl = target.closest('.criteria-range, .criteria-input-manual, .t2-criteria-button, #t2-logic-switch');
+            if (criteriaControl) {
+                if (target.id === 'range-size' || target.id === 'input-size') {
+                    const value = target.value;
+                    document.getElementById('range-size').value = value;
+                    document.getElementById('input-size').value = value;
+                    document.getElementById('value-size').textContent = formatNumber(value, 1);
+                }
             }
-            debouncedUpdateSizeInput(newValue);
-        } else if (target.id === 'publication-content-wrapper') {
-            debouncedUpdateWordCount();
-        } else if (['power-alpha', 'power-target', 'power-effect-size'].includes(target.id)) {
-            debouncedPowerAnalysisRender();
-        }
-    }
-
-    function handleSortClick(header, subHeader) {
-        const key = header.dataset.sortKey;
-        if (!key) return;
-        const subKey = subHeader?.dataset.subKey || null;
-        const tableId = header.closest('table')?.id;
-        const context = tableId === 'data-table' ? 'data' : 'analysis';
-        app.handleSortRequest(context, key, subKey);
-    }
-
-    function handleT2CheckboxChange(checkbox) {
-        if (window.t2CriteriaManager.toggleCriterionActive(checkbox.value, checkbox.checked)) {
-            window.uiManager.updateT2CriteriaControlsUI(window.t2CriteriaManager.getCurrentCriteria(), window.t2CriteriaManager.getCurrentLogic());
-            window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
-        }
-    }
-
-    function handleT2LogicChange(logicSwitch) {
-        const newLogic = logicSwitch.checked ? 'OR' : 'AND';
-        if (window.t2CriteriaManager.updateLogic(newLogic)) {
-            window.uiManager.updateT2CriteriaControlsUI(window.t2CriteriaManager.getCurrentCriteria(), window.t2CriteriaManager.getCurrentLogic());
-            window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
-        }
-    }
-
-    function handleStatsLayoutToggle(newLayout) {
-        if (window.state.setStatsLayout(newLayout)) {
-            app.refreshCurrentTab();
-        }
-    }
-
-    function handleStatsCohortChange(selectElement) {
-        const newValue = selectElement.value;
-        let needsRender = false;
-        if (selectElement.id === 'statistics-cohort-select-1') {
-            needsRender = window.state.setStatsCohort1(newValue);
-        } else if (selectElement.id === 'statistics-cohort-select-2') {
-            needsRender = window.state.setStatsCohort2(newValue);
-        }
-        if (needsRender && window.state.getStatsLayout() === 'vergleich') {
-            app.refreshCurrentTab();
-        }
-    }
-
-    function handleComparisonViewChange(view) {
-        if (window.state.setComparisonView(view)) {
-            app.refreshCurrentTab();
-        }
-    }
-
-    function handleComparisonStudyChange(studyId) {
-        if (window.state.setComparisonStudyId(studyId)) {
-            app.refreshCurrentTab();
-        }
-    }
-    
-    function handleInsightsViewChange(view) {
-        if (window.state.setInsightsView(view)) {
-            app.refreshCurrentTab();
-        }
-    }
-
-    function handlePowerAnalysisStudyChange(studyId) {
-        if (window.state.setInsightsPowerStudyId(studyId)) {
-            if(window.insightsTab) window.insightsTab.renderPowerAnalysis(app.allPublicationStats);
-        }
-    }
-    
-    function handleMismatchAnalysisStudyChange(studyId) {
-        if (window.state.setInsightsMismatchStudyId(studyId)) {
-            if(window.insightsTab) window.insightsTab.renderMismatchAnalysis(app.allPublicationStats, app.getProcessedData());
-        }
-    }
-
-    function handleFeatureImportanceCohortChange(cohortId) {
-        if (window.state.setInsightsFeatureImportanceCohort(cohortId)) {
-            if(window.insightsTab) window.insightsTab.renderFeatureImportance(app.allPublicationStats);
-        }
-    }
-
-    function handlePublicationBfMetricChange(newMetric) {
-        if (window.state.setPublicationBruteForceMetric(newMetric)) {
-            app.refreshCurrentTab();
-        }
-    }
-
-    function handlePublicationEditStart() {
-        if (window.state.setPublicationEditMode(true)) {
-            window.uiManager.updatePublicationEditModeUI(true);
-            const contentWrapper = document.getElementById('publication-content-wrapper');
-            if (contentWrapper) {
-                contentWrapper.focus();
-            }
-        }
-    }
-
-    function handlePublicationSave() {
-        const contentWrapper = document.getElementById('publication-content-wrapper');
-        if (contentWrapper) {
-            window.state.setEditedManuscriptHTML(contentWrapper.innerHTML);
-            window.state.setPublicationEditMode(false);
-            window.uiManager.updatePublicationEditModeUI(false);
-            window.uiManager.showToast('Manuscript changes saved.', 'success');
-        }
-    }
-
-    function handlePublicationReset() {
-        if (window.confirm("Are you sure you want to discard all manual changes and revert to the auto-generated manuscript?")) {
-            window.state.resetEditedManuscriptHTML();
-            window.state.setPublicationEditMode(false);
-            app.refreshCurrentTab();
-            window.uiManager.showToast('Manuscript has been reset to the generated version.', 'info');
-        }
+        });
     }
 
     return Object.freeze({
