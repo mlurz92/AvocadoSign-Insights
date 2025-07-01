@@ -195,8 +195,7 @@ window.chartRenderer = (() => {
                 d3.select(this).style("opacity", 1).style("stroke", "#333").style("stroke-width", 1);
             })
             .on("mouseout", function() {
-                tooltip.transition().duration(200).style("opacity", 0);
-                d3.select(this).style("opacity", 0.9).style("stroke", "none");
+                tooltip.transition().duration(200).style("opacity", 0.9).style("stroke", "none");
             })
             .transition().duration(window.APP_CONFIG.CHART_SETTINGS.ANIMATION_DURATION_MS).ease(d3.easeCubicOut).attr("y", d => y(d.value ?? 0)).attr("height", d => Math.max(0, innerHeight - y(d.value ?? 0)));
         
@@ -324,30 +323,30 @@ window.chartRenderer = (() => {
             .style("opacity", 1);
     }
     
-    function renderFeatureImportanceChart(data, targetElementId, options = {}) {
-        const setupOptions = { ...options, margin: { top: 20, right: 20, bottom: 40, left: 180, ...options.margin } };
+    function renderDORForestPlot(data, targetElementId, options = {}) {
+        const setupOptions = { ...options, margin: { top: 20, right: 20, bottom: 40, left: 220, ...options.margin } };
         const containerSetup = createSvgContainer(targetElementId, setupOptions);
         if (!containerSetup) return;
         const { svg, chartArea, innerWidth, innerHeight, width, height, margin } = containerSetup;
         const tooltip = createTooltip();
     
         if (!Array.isArray(data) || data.length === 0) {
-            chartArea.append('text').attr('x', innerWidth / 2).attr('y', innerHeight / 2).attr('text-anchor', 'middle').attr('class', 'text-muted small').text('No feature data available.');
+            chartArea.append('text').attr('x', innerWidth / 2).attr('y', innerHeight / 2).attr('text-anchor', 'middle').attr('class', 'text-muted small').text('No DOR data available for this cohort.');
             return;
         }
-    
+
         const validData = data
-            .filter(d => d.or && isFinite(d.or.value) && d.or.ci && isFinite(d.or.ci.lower) && isFinite(d.or.ci.upper))
-            .sort((a, b) => b.or.value - a.or.value);
+            .filter(d => d.dor && isFinite(d.dor.value) && d.dor.value > 0 && d.dor.ci && isFinite(d.dor.ci.lower) && d.dor.ci.lower > 0 && isFinite(d.dor.ci.upper))
+            .sort((a, b) => b.dor.value - a.dor.value);
             
         if (validData.length === 0) {
-             chartArea.append('text').attr('x', innerWidth / 2).attr('y', innerHeight / 2).attr('text-anchor', 'middle').attr('class', 'text-muted small').text('No valid feature data to display.');
+             chartArea.append('text').attr('x', innerWidth / 2).attr('y', innerHeight / 2).attr('text-anchor', 'middle').attr('class', 'text-muted small').text('No valid data with positive DOR to display.');
             return;
         }
     
         const y = d3.scaleBand()
             .range([0, innerHeight])
-            .domain(validData.map(d => d.featureName))
+            .domain(validData.map(d => d.name))
             .padding(0.4);
     
         chartArea.append("g")
@@ -356,16 +355,16 @@ window.chartRenderer = (() => {
             .selectAll("text")
             .style("font-size", window.APP_CONFIG.CHART_SETTINGS.TICK_LABEL_FONT_SIZE);
     
-        const xMin = d3.min(validData, d => d.or.ci.lower);
-        const xMax = d3.max(validData, d => d.or.ci.upper);
+        const xMin = d3.min(validData, d => d.dor.ci.lower);
+        const xMax = d3.max(validData, d => d.dor.ci.upper);
         const domainMin = Math.max(0.1, xMin > 1 ? 0.5 : xMin * 0.8);
-        const domainMax = Math.min(50, xMax * 1.2);
+        const domainMax = Math.min(100, xMax * 1.2);
         
         const x = d3.scaleLog()
             .domain([domainMin, domainMax])
             .range([0, innerWidth]);
     
-        const tickValues = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50].filter(v => v >= domainMin && v <= domainMax);
+        const tickValues = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100].filter(v => v >= domainMin && v <= domainMax);
 
         chartArea.append("g")
             .attr("class", "x-axis axis")
@@ -380,7 +379,7 @@ window.chartRenderer = (() => {
             .attr("x", margin.left + innerWidth / 2)
             .attr("y", height - 5)
             .style("font-size", window.APP_CONFIG.CHART_SETTINGS.AXIS_LABEL_FONT_SIZE)
-            .text(window.APP_CONFIG.UI_TEXTS.insightsTab.featureImportance.chartXAxisLabel);
+            .text(window.APP_CONFIG.UI_TEXTS.insightsTab.diagnosticPowerAnalysis.chartXAxisLabel);
 
         if (window.APP_CONFIG.CHART_SETTINGS.ENABLE_GRIDLINES) {
             chartArea.append("g").attr("class", "grid x-grid").call(d3.axisBottom(x).tickValues(tickValues).tickSize(-innerHeight).tickFormat(""));
@@ -399,38 +398,32 @@ window.chartRenderer = (() => {
             .data(validData)
             .join("g")
             .attr("class", "feature-group")
-            .attr("transform", d => `translate(0, ${y(d.featureName)})`);
+            .attr("transform", d => `translate(0, ${y(d.name)})`);
+
+        const colorScale = d3.scaleOrdinal()
+            .domain(['Avocado Sign', 'Literature', 'Brute-Force'])
+            .range([window.APP_CONFIG.CHART_SETTINGS.AS_COLOR, window.APP_CONFIG.CHART_SETTINGS.LITERATURE_COLOR, window.APP_CONFIG.CHART_SETTINGS.BRUTEFORCE_COLOR]);
 
         featureGroup.append("line")
             .attr("class", "ci-line")
-            .attr("x1", d => x(d.or.ci.lower))
-            .attr("x2", d => x(d.or.ci.upper))
+            .attr("x1", d => x(d.dor.ci.lower))
+            .attr("x2", d => x(d.dor.ci.upper))
             .attr("y1", y.bandwidth() / 2)
             .attr("y2", y.bandwidth() / 2)
             .attr("stroke", "#6c757d")
             .attr("stroke-width", 1);
     
-        featureGroup.selectAll(".ci-cap")
-            .data(d => [d.or.ci.lower, d.or.ci.upper])
-            .join("line")
-            .attr("class", "ci-cap")
-            .attr("x1", d => x(d))
-            .attr("x2", d => x(d))
-            .attr("y1", y.bandwidth() / 2 - 4)
-            .attr("y2", y.bandwidth() / 2 + 4)
-            .attr("stroke", "#6c757d")
-            .attr("stroke-width", 1);
-    
         featureGroup.append("rect")
             .attr("class", "or-point")
-            .attr("x", d => x(d.or.value) - 4)
+            .attr("x", d => x(d.dor.value) - 4)
             .attr("y", y.bandwidth() / 2 - 4)
             .attr("width", 8)
             .attr("height", 8)
-            .attr("fill", d => d.featureName.includes('AS') ? window.APP_CONFIG.CHART_SETTINGS.AS_COLOR : window.APP_CONFIG.CHART_SETTINGS.T2_COLOR)
+            .attr("fill", d => colorScale(d.type))
             .on("mouseover", (event, d) => {
                 tooltip.transition().duration(50).style("opacity", .95);
-                tooltip.html(getInterpretationTooltip('or', {...d.or, featureName: escapeHTML(d.featureName)}))
+                const tooltipHtml = `<strong>${escapeHTML(d.name)}</strong><hr class="my-1">DOR: <strong>${formatNumber(d.dor.value, 2)}</strong><br>95% CI: ${formatNumber(d.dor.ci.lower, 2)}–${formatNumber(d.dor.ci.upper, 2)}`;
+                tooltip.html(tooltipHtml)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 15) + "px");
             })
@@ -444,7 +437,7 @@ window.chartRenderer = (() => {
         renderPieChart,
         renderComparisonBarChart,
         renderDiagnosticPerformanceChart,
-        renderFeatureImportanceChart
+        renderDORForestPlot
     });
 
 })();

@@ -11,17 +11,12 @@ window.discussionGenerator = (() => {
         const performanceAS = overallStats.performanceAS;
         const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
-        const interCohortComparison = stats?.interCohortComparison?.as;
         
         const esgarSurgeryAloneComparison = stats?.surgeryAlone?.comparisonASvsT2Literature?.['ESGAR_2016_SurgeryAlone'];
 
         const bfComparisonText = (bfResultForPub && bfComparisonForPub)
             ? `(AUC, ${helpers.formatValueForPublication(performanceAS?.auc?.value, 2, false, true)} vs ${helpers.formatValueForPublication(bfResultForPub?.auc?.value, 2, false, true)}; ${helpers.formatPValueForPublication(bfComparisonForPub?.delong?.pValue)})`
             : '(comparison data pending)';
-        
-        const interCohortComparisonText = interCohortComparison
-            ? `This robustness is further supported by the finding that there was no evidence of a difference in the diagnostic performance of the Avocado Sign for predicting nodal status between the primary surgery and neoadjuvant therapy cohorts (AUC, ${helpers.formatValueForPublication(stats.surgeryAlone?.performanceAS?.auc?.value, 2, false, true)} vs ${helpers.formatValueForPublication(stats.neoadjuvantTherapy?.performanceAS?.auc?.value, 2, false, true)}, respectively; ${helpers.formatPValueForPublication(interCohortComparison.pValue)}).`
-            : '';
             
         let powerAnalysisText = '';
         if (esgarSurgeryAloneComparison?.delong?.pValue > window.APP_CONFIG.STATISTICAL_CONSTANTS.SIGNIFICANCE_LEVEL) {
@@ -36,7 +31,7 @@ window.discussionGenerator = (() => {
         `;
 
         const contextParagraph = `
-            <p>When contextualized against established literature, the Avocado Sign's performance surpassed that of most conventional T2-weighted criteria.${powerAnalysisText} The limitations of these standard criteria are well-documented, with meta-analyses reporting suboptimal accuracy and highlighting N-staging as the "weakest link" of rectal MRI ${helpers.getReference('Beets_Tan_2018')}${helpers.getReference('Al_Sukhni_2012')}${helpers.getReference('Zhuang_2021')}. This diagnostic gap has led to a diminished reliance on T- and N-staging for therapy decisions in landmark trials like OCUM ${helpers.getReference('Stelzner_2022')}. While current ACR Appropriateness Criteria correctly identify MRI as the primary modality for locoregional staging, they also acknowledge that nodal assessment remains "challenging" and that IV contrast may be helpful in specific scenarios. Our findings do not contradict the general appropriateness of non-contrast MRI for T-staging but provide specific evidence that the addition of a contrast-enhanced sequence enables the use of the Avocado Sign, a marker that significantly improves the accuracy of N-staging, thereby addressing a well-documented limitation of the standard approach. This is further underscored by the sign's almost perfect interobserver agreement (Cohen’s kappa = ${helpers.formatValueForPublication(overallStats?.interobserverKappa?.value, 2, false, true)}), which indicates it is a simple and highly reproducible marker suitable for broad clinical application ${helpers.getReference('Lurz_Schaefer_2025')}. ${interCohortComparisonText}</p>
+            <p>When contextualized against established literature, the Avocado Sign's performance surpassed that of most conventional T2-weighted criteria.${powerAnalysisText} The limitations of these standard criteria are well-documented, with meta-analyses reporting suboptimal accuracy and highlighting N-staging as the "weakest link" of rectal MRI ${helpers.getReference('Beets_Tan_2018')}${helpers.getReference('Al_Sukhni_2012')}${helpers.getReference('Zhuang_2021')}. This diagnostic gap has led to a diminished reliance on T- and N-staging for therapy decisions in landmark trials like OCUM ${helpers.getReference('Stelzner_2022')}. While current ACR Appropriateness Criteria correctly identify MRI as the primary modality for locoregional staging, they also acknowledge that nodal assessment remains "challenging" and that IV contrast may be helpful only in specific scenarios. Our findings provide specific evidence that the addition of a contrast-enhanced sequence enables the use of the Avocado Sign, a marker that significantly improves the accuracy of N-staging, thereby addressing a well-documented limitation of the standard approach. This is further underscored by the sign's almost perfect interobserver agreement (Cohen’s kappa = ${helpers.formatValueForPublication(overallStats?.interobserverKappa?.value, 2, false, true)}), which indicates it is a simple and highly reproducible marker suitable for broad clinical application ${helpers.getReference('Lurz_Schaefer_2025')}.</p>
         `;
 
         const clinicalImplicationsParagraph = `

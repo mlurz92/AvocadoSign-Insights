@@ -13,7 +13,7 @@ window.methodsGenerator = (() => {
                 ['Matrix', '394 × 448', '380 × 432', '380 × 432', '140 × 140', '326 × 384'],
                 ['Acquisition time (min)', '4:37', '4:50', '4:50', '3:57', '4:10']
             ],
-            notes: "Note.—TSE = turbo spin-echo, DWI = diffusion-weighted imaging, VIBE = volumetric interpolated breath-hold examination."
+            notes: "TSE = turbo spin-echo, DWI = diffusion-weighted imaging, VIBE = volumetric interpolated breath-hold examination."
         };
         return window.publicationHelpers.createPublicationTableHTML(tableConfig);
     }
@@ -33,7 +33,7 @@ window.methodsGenerator = (() => {
         return `
             <h3 id="methoden_studienanlage_ethik">Study Design and Patients</h3>
             <p>${regulatoryStatement} This analysis involved a fully blinded re-evaluation of a previously described retrospective cohort of ${helpers.formatValueForPublication(nOverall, 0)} consecutive patients with histopathologically confirmed rectal cancer who underwent pelvic MRI for primary staging or restaging between January 2020 and November 2023 ${helpers.getReference('Lurz_Schaefer_2025')}.</p>
-            <p>Inclusion criteria for this secondary analysis were the availability of high-quality T2-weighted and contrast-enhanced T1-weighted MRI sequences and a definitive histopathological reference standard from the subsequent total mesorectal excision specimen. Of the final cohort, ${surgeryAlonePercentString} underwent primary surgery, while ${neoadjuvantPercentString} received neoadjuvant chemoradiotherapy followed by restaging MRI prior to surgery.</p>
+            <p>Inclusion criteria for this secondary analysis were the availability of high-quality T2-weighted and contrast-enhanced T1-weighted MRI sequences and a definitive histopathological reference standard from the subsequent total mesorectal excision specimen. Of the final cohort, ${surgeryAlonePercentString} underwent primary surgery, while ${neoadjuvantPercentString} received standard long-term neoadjuvant chemoradiotherapy.</p>
         `;
     }
 

@@ -9,7 +9,7 @@ window.DEFAULT_T2_CRITERIA = Object.freeze({
 
 window.APP_CONFIG = Object.freeze({
     APP_NAME: "Nodal Staging: Avocado Sign vs. T2 Criteria",
-    APP_VERSION: "5.2.0-radiology-final",
+    APP_VERSION: "5.3.0-insights-rebuild",
     NA_PLACEHOLDER: '—',
     COHORTS: Object.freeze({
         OVERALL: { id: 'Overall', therapyValue: null, displayName: 'Overall' },
@@ -26,9 +26,9 @@ window.APP_CONFIG = Object.freeze({
         STATS_COHORT2: 'neoadjuvantTherapy',
         COMPARISON_VIEW: 'as-vs-t2',
         COMPARISON_STUDY_ID: 'Rutegard_2025',
-        INSIGHTS_VIEW: 'power-analysis',
-        INSIGHTS_POWER_STUDY_ID: 'Rutegard_2025',
+        INSIGHTS_VIEW: 'mismatch-analysis',
         INSIGHTS_MISMATCH_STUDY_ID: 'Rutegard_2025',
+        INSIGHTS_DIAGNOSTIC_POWER_COHORT: 'Overall',
         ACTIVE_TAB_ID: 'publication',
         PUBLICATION_SECTION: 'title_main',
         PUBLICATION_BRUTE_FORCE_METRIC: 'Balanced Accuracy',
@@ -45,24 +45,24 @@ window.APP_CONFIG = Object.freeze({
         { value: 'Youden-Index', label: 'Youden-Index' }
     ]),
     STORAGE_KEYS: Object.freeze({
-        APPLIED_CRITERIA: 'avocadoSign_appliedT2Criteria_v5.2',
-        APPLIED_LOGIC: 'avocadoSign_appliedT2Logic_v5.2',
-        BRUTE_FORCE_RESULTS: 'avocadoSign_bruteForceResults_v5.2',
-        CURRENT_COHORT: 'avocadoSign_currentCohort_v5.2',
-        PUBLICATION_SECTION: 'avocadoSign_publicationSection_v5.2',
-        PUBLICATION_BRUTE_FORCE_METRIC: 'avocadoSign_publicationBfMetric_v5.2',
-        PUBLICATION_LANG: 'avocadoSign_publicationLang_v5.2',
-        STATS_LAYOUT: 'avocadoSign_statsLayout_v5.2',
-        STATS_COHORT1: 'avocadoSign_statsCohort1_v5.2',
-        STATS_COHORT2: 'avocadoSign_statsCohort2_v5.2',
-        COMPARISON_VIEW: 'avocadoSign_comparisonView_v5.2',
-        COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.2',
-        INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.2',
-        INSIGHTS_POWER_STUDY_ID: 'avocadoSign_insightsPowerStudyId_v5.2',
-        INSIGHTS_MISMATCH_STUDY_ID: 'avocadoSign_insightsMismatchStudyId_v5.2',
-        FIRST_APP_START: 'avocadoSign_appFirstStart_v5.2',
-        PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.2',
-        EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.2'
+        APPLIED_CRITERIA: 'avocadoSign_appliedT2Criteria_v5.3',
+        APPLIED_LOGIC: 'avocadoSign_appliedT2Logic_v5.3',
+        BRUTE_FORCE_RESULTS: 'avocadoSign_bruteForceResults_v5.3',
+        CURRENT_COHORT: 'avocadoSign_currentCohort_v5.3',
+        PUBLICATION_SECTION: 'avocadoSign_publicationSection_v5.3',
+        PUBLICATION_BRUTE_FORCE_METRIC: 'avocadoSign_publicationBfMetric_v5.3',
+        PUBLICATION_LANG: 'avocadoSign_publicationLang_v5.3',
+        STATS_LAYOUT: 'avocadoSign_statsLayout_v5.3',
+        STATS_COHORT1: 'avocadoSign_statsCohort1_v5.3',
+        STATS_COHORT2: 'avocadoSign_statsCohort2_v5.3',
+        COMPARISON_VIEW: 'avocadoSign_comparisonView_v5.3',
+        COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.3',
+        INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.3',
+        INSIGHTS_MISMATCH_STUDY_ID: 'avocadoSign_insightsMismatchStudyId_v5.3',
+        INSIGHTS_DIAGNOSTIC_POWER_COHORT: 'avocadoSign_insightsDiagPowerCohort_v5.3',
+        FIRST_APP_START: 'avocadoSign_appFirstStart_v5.3',
+        PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.3',
+        EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.3'
     }),
     PATHS: Object.freeze({
         BRUTE_FORCE_WORKER: 'workers/brute_force_worker.js'
@@ -112,6 +112,8 @@ window.APP_CONFIG = Object.freeze({
         COMPACT_PIE_MARGIN: Object.freeze({ top: 15, right: 15, bottom: 50, left: 15 }),
         AS_COLOR: '#005f73',
         T2_COLOR: '#ae2012',
+        LITERATURE_COLOR: '#94a3b8',
+        BRUTEFORCE_COLOR: '#2a9d8f',
         ANIMATION_DURATION_MS: 750,
         AXIS_LABEL_FONT_SIZE: '12px',
         TICK_LABEL_FONT_SIZE: '11px',
@@ -178,21 +180,9 @@ window.APP_CONFIG = Object.freeze({
             exportNotAvailable: 'Export function not available.'
         },
         insightsTab: {
-            powerAnalysis: {
-                cardTitle: 'Power Analysis',
-                selectLabel: 'Compare AS against T2 Set:',
-                modeLabel: 'Analysis Mode:',
-                postHocModeLabel: 'Post-hoc Power',
-                sampleSizeModeLabel: 'Sample Size Estimation',
-                alphaLabel: 'Significance Level (α):',
-                powerLabel: 'Target Power (1-β):',
-                effectSizeLabel: 'Assumed AUC Difference:',
-                postHocResult: 'Achieved Power:',
-                sampleSizeResult: 'Required Sample Size (N):'
-            },
             mismatchAnalysis: {
                 cardTitle: 'Mismatch Analysis',
-                selectLabel: 'Compare AS against T2 Set:',
+                selectLabel: 'Compare Avocado Sign against T2 Set:',
                 concordantCorrect: 'Both Correct',
                 concordantIncorrect: 'Both Incorrect',
                 asSuperior: 'AS Correct, T2 Incorrect',
@@ -200,18 +190,21 @@ window.APP_CONFIG = Object.freeze({
                 tooltip_concordantCorrect: 'Cases where both Avocado Sign and the T2 criteria correctly predicted the N-status.',
                 tooltip_concordantIncorrect: 'Cases where both Avocado Sign and the T2 criteria incorrectly predicted the N-status. Click to see patients.',
                 tooltip_asSuperior: 'Cases where the Avocado Sign was correct, but the T2 criteria failed. Click to see patients.',
-                tooltip_t2Superior: 'Cases where the T2 criteria were correct, but the Avocado Sign failed. Click to see patients.'
+                tooltip_t2Superior: 'Cases where the T2 criteria were correct, but the Avocado Sign failed. Click to see patients.',
+                subcat_fp: 'Avoided False Positives (Improved Specificity)',
+                subcat_fn: 'Avoided False Negatives (Improved Sensitivity)'
             },
-            featureImportance: {
-                cardTitle: 'Feature Importance',
-                chartYAxisLabel: 'T2-weighted Feature',
-                chartXAxisLabel: 'Odds Ratio (log scale)'
+            diagnosticPowerAnalysis: {
+                cardTitle: 'Diagnostic Power Analysis',
+                selectLabel: 'Select Cohort for Analysis:',
+                chartYAxisLabel: 'Diagnostic Method',
+                chartXAxisLabel: 'Diagnostic Odds Ratio (DOR) and 95% CI'
             }
         },
         PUBLICATION_TEXTS: Object.freeze({
             MIM_REGULATORY_STATEMENT: "This secondary analysis of a retrospective, single-institution study was compliant with the Health Insurance Portability and Accountability Act and approved by our institutional review board, which waived the requirement for additional written informed consent.",
             STATISTICAL_ANALYSIS_METHODS: "Descriptive statistics were used to summarize patient characteristics. Diagnostic performance metrics—including sensitivity, specificity, positive predictive value, negative predictive value, and accuracy—were calculated. The Wilson score method was used for 95% confidence intervals (CIs) of proportions. For the area under the receiver operating characteristic curve (AUC), CIs were derived using the bootstrap percentile method with 1000 replications.",
-            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.2.0-radiology-final). A two-sided *P* < .05 was considered to indicate statistical significance."
+            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.3.0). A two-sided *P* < .05 was considered to indicate statistical significance."
         }),
         chartTitles: {
             ageDistribution: 'Age Distribution',
@@ -252,6 +245,7 @@ window.APP_CONFIG = Object.freeze({
                 npv: { title: 'Negative Predictive Value', text: 'The probability that a patient with a negative test result actually does not have the disease.<br><strong>Formula:</strong> TN / (TN + FN)' },
                 acc: { title: 'Accuracy', text: 'The proportion of all tests that are correct.<br><strong>Formula:</strong> (TP + TN) / Total' },
                 auc: { title: 'Area Under the ROC Curve (AUC)', text: 'A measure of the overall performance of a diagnostic test. A value of 1.0 represents a perfect test, while 0.5 represents a test with no discriminative ability. For binary tests, this is equivalent to Balanced Accuracy.' },
+                dor: { title: 'Diagnostic Odds Ratio (DOR)', text: 'A single indicator of test performance, independent of prevalence. Higher values indicate better discriminatory test performance.<br><strong>Formula:</strong> (TP*TN) / (FP*FN)'},
                 f1: { title: 'F1-Score', text: 'The harmonic mean of PPV and sensitivity. It provides a single score that balances both concerns.<br><strong>Formula:</strong> 2 * (PPV * Sensitivity) / (PPV + Sensitivity)' },
                 or: { title: 'Odds Ratio', text: 'Represents the odds that an outcome will occur given a particular exposure, compared to the odds of the outcome occurring in the absence of that exposure.<br><strong>Formula:</strong> (TP*TN) / (FP*FN)' },
                 rd: { title: 'Risk Difference (Absolute Risk Reduction)', text: 'The absolute difference in the outcome rates between the exposed and unexposed groups.<br><strong>Formula:</strong> (TP / (TP+FP)) - (FN / (FN+TN))' },

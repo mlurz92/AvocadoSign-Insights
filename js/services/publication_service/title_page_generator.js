@@ -5,7 +5,7 @@ window.titlePageGenerator = (() => {
         const overallStats = stats?.[window.APP_CONFIG.COHORTS.OVERALL.id];
         const helpers = window.publicationHelpers;
 
-        const title = "Contrast-enhanced MRI versus T2-based Criteria for Nodal Staging in Rectal Cancer";
+        const title = "Contrast-enhanced versus T2-weighted MRI for Predicting Nodal Status in Rectal Cancer";
         const authors = "Markus Lurz, MD • Arnd-Oliver Schäfer, MD";
         const institution = "Department of Radiology and Nuclear Medicine, St. Georg Hospital, Leipzig, Germany";
         const correspondingAuthor = {
