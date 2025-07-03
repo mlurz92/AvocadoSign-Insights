@@ -62,12 +62,6 @@ window.eventManager = (() => {
             return;
         }
         
-        const mismatchCell = target.closest('.mismatch-cell[data-action="show-mismatch-details"]');
-        if (mismatchCell) {
-            app.showMismatchDetails(mismatchCell.dataset.mismatchKey);
-            return;
-        }
-
         if (!button || button.disabled) return;
         
         if (button.dataset.action === 'apply-saved-bf') {
@@ -136,8 +130,6 @@ window.eventManager = (() => {
             'comp-study-select': () => handleComparisonStudyChange(target.value),
             'publication-bf-metric-select': () => handlePublicationBfMetricChange(target.value),
             'power-analysis-study-select': () => handlePowerAnalysisStudyChange(target.value),
-            'mismatch-analysis-study-select': () => handleMismatchAnalysisStudyChange(target.value),
-            'feature-importance-cohort-select': () => handleFeatureImportanceCohortChange(target.value),
             'power-mode-posthoc': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats),
             'power-mode-samplesize': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats)
         };
@@ -247,18 +239,6 @@ window.eventManager = (() => {
         }
     }
     
-    function handleMismatchAnalysisStudyChange(studyId) {
-        if (window.state.setInsightsMismatchStudyId(studyId)) {
-            if(window.insightsTab) window.insightsTab.renderMismatchAnalysis(app.allPublicationStats, app.getProcessedData());
-        }
-    }
-
-    function handleFeatureImportanceCohortChange(cohortId) {
-        if (window.state.setInsightsFeatureImportanceCohort(cohortId)) {
-            if(window.insightsTab) window.insightsTab.renderFeatureImportance(app.allPublicationStats);
-        }
-    }
-
     function handlePublicationBfMetricChange(newMetric) {
         if (window.state.setPublicationBruteForceMetric(newMetric)) {
             app.refreshCurrentTab();

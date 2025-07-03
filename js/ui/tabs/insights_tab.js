@@ -101,137 +101,6 @@ window.insightsTab = (() => {
         window.uiManager.updateElementHTML(resultsContainer.id, resultsHTML);
     }
     
-    function _renderMismatchAnalysis(allStats, processedData) {
-        const selectedStudyId = window.state.getInsightsMismatchStudyId();
-        const resultsContainer = document.getElementById('mismatch-analysis-results');
-        const interpretationContainer = document.getElementById('mismatch-analysis-interpretation-container');
-        if (!resultsContainer || !interpretationContainer) return;
-    
-        const compData = _getComparisonData(selectedStudyId, allStats);
-        if (!compData || !compData.performanceAS || !compData.performanceT2) {
-            resultsContainer.innerHTML = '<p class="text-muted small p-3 text-center">Data for mismatch analysis is not available for the selected criteria set.</p>';
-            interpretationContainer.innerHTML = '';
-            return;
-        }
-    
-        const { cohortId } = compData;
-        const cohortData = window.dataProcessor.filterDataByCohort(processedData, cohortId);
-        let studySet;
-    
-        if (selectedStudyId.startsWith('bf_')) {
-            const bfMetric = window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC;
-            const bfDef = allStats[cohortId]?.bruteforceDefinitions?.[bfMetric];
-            if(bfDef) studySet = { criteria: bfDef.criteria, logic: bfDef.logic };
-        } else {
-            studySet = window.studyT2CriteriaManager.getStudyCriteriaSetById(selectedStudyId);
-        }
-        
-        if (!studySet) {
-            resultsContainer.innerHTML = '<p class="text-danger small p-3 text-center">Could not find criteria definition for mismatch analysis.</p>';
-            interpretationContainer.innerHTML = '';
-            return;
-        }
-        
-        const evaluatedData = studySet.logic === 'KOMBINIERT'
-            ? window.studyT2CriteriaManager.evaluateDatasetWithStudyCriteria(cohortData, studySet)
-            : window.t2CriteriaManager.evaluateDataset(cohortData, studySet.criteria, studySet.logic);
-    
-        const mismatch = {
-            concordantCorrect: [], concordantIncorrect: [], asSuperior: [], t2Superior: []
-        };
-    
-        evaluatedData.forEach(p => {
-            if (!p.nStatus) return;
-            const asCorrect = (p.asStatus === p.nStatus);
-            const t2Correct = (p.t2Status === p.nStatus);
-            if (asCorrect && t2Correct) mismatch.concordantCorrect.push(p);
-            else if (!asCorrect && !t2Correct) mismatch.concordantIncorrect.push(p);
-            else if (asCorrect && !t2Correct) mismatch.asSuperior.push(p);
-            else if (!asCorrect && t2Correct) mismatch.t2Superior.push(p);
-        });
-    
-        const texts = window.APP_CONFIG.UI_TEXTS.insightsTab.mismatchAnalysis;
-        const createCell = (label, count, bgColor, key, tooltip) => `
-            <div class="mismatch-cell ${bgColor} p-3 rounded d-flex flex-column justify-content-center align-items-center" data-action="show-mismatch-details" data-mismatch-key="${key}" data-tippy-content="${tooltip}" style="cursor: pointer;">
-                <span class="mismatch-count fw-bold fs-4">${count}</span>
-                <span class="mismatch-label small text-center">${label}</span>
-            </div>`;
-    
-        const html = `
-            <div class="mismatch-grid">
-                <div class="mismatch-header-top text-center small fw-bold text-muted">T2 Criteria</div>
-                <div class="mismatch-header-left text-center small fw-bold text-muted"><span>Avocado Sign</span></div>
-                <div class="mismatch-cell-placeholder"></div>
-                <div class="mismatch-header-item text-center small">Correct</div>
-                <div class="mismatch-header-item text-center small">Incorrect</div>
-                <div class="mismatch-header-item text-center small">Correct</div>
-                ${createCell(texts.concordantCorrect, mismatch.concordantCorrect.length, 'bg-success-subtle', 'concordantCorrect', texts.tooltip_concordantCorrect)}
-                ${createCell(texts.asSuperior, mismatch.asSuperior.length, 'bg-primary-subtle', 'asSuperior', texts.tooltip_asSuperior)}
-                <div class="mismatch-header-item text-center small">Incorrect</div>
-                ${createCell(texts.t2Superior, mismatch.t2Superior.length, 'bg-warning-subtle', 't2Superior', texts.tooltip_t2Superior)}
-                ${createCell(texts.concordantIncorrect, mismatch.concordantIncorrect.length, 'bg-danger-subtle', 'concordantIncorrect', texts.tooltip_concordantIncorrect)}
-            </div>`;
-        
-        resultsContainer.innerHTML = html;
-        window.state.setMismatchData(mismatch);
-        
-        const totalMismatch = mismatch.asSuperior.length + mismatch.t2Superior.length;
-        const interpretationText = totalMismatch > 0 
-            ? `In <strong>${mismatch.asSuperior.length}</strong> of ${totalMismatch} discordant cases, the Avocado Sign provided the correct diagnosis where the T2 criteria failed. Conversely, the T2 criteria were superior in <strong>${mismatch.t2Superior.length}</strong> cases.`
-            : `There were no discordant cases between the Avocado Sign and the selected T2 criteria in this cohort. Both methods agreed on the diagnosis for all patients.`;
-        interpretationContainer.innerHTML = `<p class="mb-0"><strong>Interpretation:</strong> ${interpretationText}</p>`;
-    }
-
-    function _renderFeatureImportance(allStats) {
-        const selectedCohort = window.state.getInsightsFeatureImportanceCohort();
-        const chartContainer = document.getElementById('feature-importance-chart-container');
-        const tableContainer = document.getElementById('feature-importance-table-container');
-        const interpretationContainer = document.getElementById('feature-importance-interpretation-container');
-
-        if (!chartContainer || !tableContainer || !interpretationContainer) return;
-        
-        const stats = allStats[selectedCohort];
-        if (!stats || !stats.associationsApplied) {
-            chartContainer.innerHTML = '<p class="text-muted small p-3 text-center">Feature importance data not available for this cohort.</p>';
-            tableContainer.innerHTML = '';
-            interpretationContainer.innerHTML = '';
-            return;
-        }
-
-        const dataForChart = Object.values(stats.associationsApplied).filter(item => item.or && isFinite(item.or.value));
-        window.chartRenderer.renderFeatureImportanceChart(dataForChart, chartContainer.id);
-
-        const na_stat = window.APP_CONFIG.NA_PLACEHOLDER;
-        const fORCI = (orObj) => { const val = formatNumber(orObj?.value, 2, na_stat, true); const ciL = formatNumber(orObj?.ci?.lower, 2, na_stat, true); const ciU = formatNumber(orObj?.ci?.upper, 2, na_stat, true); return (val !== na_stat && ciL !== na_stat && ciU !== na_stat) ? `${val} (${ciL}–${ciU})` : val; };
-        
-        let tableHTML = `<div class="table-responsive"><table class="table table-sm table-striped small"><thead><tr>
-            <th data-tippy-content="Imaging feature evaluated for its association with N-positive status.">Feature</th>
-            <th data-tippy-content="${getDefinitionTooltip('or')}">Odds Ratio (95% CI)</th>
-            <th data-tippy-content="${getDefinitionTooltip('pValue')}">P value</th>
-        </tr></thead><tbody>`;
-
-        const sortedData = [...dataForChart].sort((a,b) => b.or.value - a.or.value);
-
-        sortedData.forEach(item => {
-            if (item.testName?.includes("Mann-Whitney")) return;
-            tableHTML += `<tr>
-                <td>${item.featureName}</td>
-                <td data-tippy-content="${getInterpretationTooltip('or', item.or, {featureName: item.featureName})}">${fORCI(item.or)}</td>
-                <td data-tippy-content="${getInterpretationTooltip('pValue', item, {featureName: escapeHTML(item.featureName)})}">${getPValueText(item.pValue, false)} ${getStatisticalSignificanceSymbol(item.pValue)}</td>
-            </tr>`;
-        });
-        tableHTML += '</tbody></table></div>';
-        tableContainer.innerHTML = tableHTML;
-        
-        const strongestFeature = sortedData[0];
-        if(strongestFeature){
-            const interpretationText = `<strong>Interpretation:</strong> In the <strong>${getCohortDisplayName(selectedCohort)}</strong> cohort, the presence of the <strong>${strongestFeature.featureName}</strong> feature shows the strongest association with a positive nodal status. Patients with this feature have ${formatNumber(strongestFeature.or.value, 1)} times the odds of being N-positive compared to patients without it.`;
-            interpretationContainer.innerHTML = `<p class="mb-0">${interpretationText}</p>`;
-        } else {
-            interpretationContainer.innerHTML = '';
-        }
-    }
-    
     function _renderView(allStats, processedData){
         const insightsView = window.state.getInsightsView();
         const contentArea = document.getElementById('insights-content-area');
@@ -245,19 +114,6 @@ window.insightsTab = (() => {
                 contentArea.innerHTML = `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
                 _renderPowerAnalysis(allStats);
                 break;
-            case 'mismatch-analysis':
-                const mismatchStudyId = window.state.getInsightsMismatchStudyId();
-                cardHTML = window.uiComponents.createStatisticsCard('mismatch-analysis', window.APP_CONFIG.UI_TEXTS.insightsTab.mismatchAnalysis.cardTitle, window.uiComponents.createMismatchAnalysisCardHTML(mismatchStudyId), true);
-                contentArea.innerHTML = `<div class="row justify-content-center"><div class="col-xl-8">${cardHTML}</div></div>`;
-                _renderMismatchAnalysis(allStats, processedData);
-                break;
-            case 'feature-importance':
-                const selectedCohort = window.state.getInsightsFeatureImportanceCohort();
-                const cardTitle = `${window.APP_CONFIG.UI_TEXTS.insightsTab.featureImportance.cardTitle}`;
-                cardHTML = window.uiComponents.createStatisticsCard('feature-importance', cardTitle, window.uiComponents.createFeatureImportanceCardHTML(selectedCohort), true);
-                contentArea.innerHTML = `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
-                _renderFeatureImportance(allStats);
-                break;
         }
     }
 
@@ -270,13 +126,7 @@ window.insightsTab = (() => {
                 <div class="col-12 d-flex justify-content-center">
                     <div class="btn-group btn-group-sm" role="group" aria-label="Insights View Selection">
                         <input type="radio" class="btn-check" name="insightsView" id="view-power-analysis" value="power-analysis" ${insightsView === 'power-analysis' ? 'checked' : ''}>
-                        <label class="btn btn-outline-primary" for="view-power-analysis"><i class="fas fa-battery-half me-2"></i>${texts.powerAnalysis.cardTitle}</label>
-                        
-                        <input type="radio" class="btn-check" name="insightsView" id="view-mismatch-analysis" value="mismatch-analysis" ${insightsView === 'mismatch-analysis' ? 'checked' : ''}>
-                        <label class="btn btn-outline-primary" for="view-mismatch-analysis"><i class="fas fa-not-equal me-2"></i>${texts.mismatchAnalysis.cardTitle}</label>
-                        
-                        <input type="radio" class="btn-check" name="insightsView" id="view-feature-importance" value="feature-importance" ${insightsView === 'feature-importance' ? 'checked' : ''}>
-                        <label class="btn btn-outline-primary" for="view-feature-importance"><i class="fas fa-sitemap me-2"></i>${texts.featureImportance.cardTitle}</label>
+                        <label class="btn btn-outline-primary active" for="view-power-analysis"><i class="fas fa-battery-half me-2"></i>${texts.powerAnalysis.cardTitle}</label>
                     </div>
                 </div>
             </div>
@@ -291,8 +141,6 @@ window.insightsTab = (() => {
     return Object.freeze({
         render,
         renderPowerAnalysis: _renderPowerAnalysis,
-        renderMismatchAnalysis: _renderMismatchAnalysis,
-        renderFeatureImportance: _renderFeatureImportance,
         renderView: _renderView
     });
 

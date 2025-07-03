@@ -17,8 +17,6 @@ This application serves as a specialized research instrument for the in-depth an
 * **Automated Criteria Optimization:** An integrated brute-force algorithm, running in a dedicated Web Worker, systematically identifies the mathematically optimal combination of T2w criteria for a user-selected diagnostic metric.
 * **Advanced Statistical Insights (`Insights` Tab):**
     * **Power Analysis:** Post-hoc calculation of statistical power and a priori estimation of the required sample size for future studies.
-    * **Mismatch Analysis:** An interactive 2x2 matrix for the qualitative investigation of cases where diagnostic methods yield different results.
-    * **Feature Importance Analysis:** Visualization of the predictive power of individual T2 features using odds ratios.
 * **Comprehensive Statistical Analysis:** Automated calculation of all relevant diagnostic performance metrics (sensitivity, specificity, PPV, NPV, accuracy, AUC) including 95% confidence intervals and appropriate statistical comparison tests (e.g., DeLong, McNemar).
 * **Automated Publication Assistant:** A dedicated module that generates a complete, formatted, English-language manuscript draft (including text, tables, and figures) that precisely adheres to the scientific style guidelines of the journal *Radiology* and integrates the power analysis results context-sensitively into the discussion.
 * **Versatile Export Functionality:** Enables the export of the full manuscript, individual tables (Markdown), and all charts (SVG).

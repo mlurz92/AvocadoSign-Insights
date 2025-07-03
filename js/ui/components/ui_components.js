@@ -595,75 +595,6 @@ window.uiComponents = (() => {
         `;
     }
 
-    function createMismatchAnalysisCardHTML(selectedStudyId) {
-        const texts = window.APP_CONFIG.UI_TEXTS.insightsTab.mismatchAnalysis;
-        const allStudySets = window.studyT2CriteriaManager.getAllStudyCriteriaSets();
-        const allBfResults = window.bruteForceManager.getAllResults();
-        
-        let optionsHTML = '';
-        const createOptions = (sets) => sets.map(set => `<option value="${set.id}" ${selectedStudyId === set.id ? 'selected' : ''}>${set.name || set.id}</option>`).join('');
-
-        const groupedLitSets = allStudySets.reduce((acc, set) => {
-            const group = set.group || 'Other Literature Criteria';
-            if (!acc[group]) acc[group] = [];
-            acc[group].push(set);
-            return acc;
-        }, {});
-
-        const bfOptionsHTML = Object.keys(allBfResults).map(cohortId => {
-            const metric = window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC;
-            if (allBfResults[cohortId]?.[metric]) {
-                const bfId = `bf_${cohortId}`;
-                return `<option value="${bfId}" ${selectedStudyId === bfId ? 'selected' : ''}>Best Case T2 (${getCohortDisplayName(cohortId)})</option>`;
-            }
-            return '';
-        }).join('');
-        
-        optionsHTML += `<optgroup label="Data-driven Best-Case Criteria">${bfOptionsHTML}</optgroup>`;
-        
-        const groupOrder = ['ESGAR Criteria', 'Other Literature Criteria'];
-        groupOrder.forEach(groupName => {
-            if (groupedLitSets[groupName]) {
-                optionsHTML += `<optgroup label="${groupName}">${createOptions(groupedLitSets[groupName])}</optgroup>`;
-            }
-        });
-
-        return `
-            <div class="mb-3">
-                <label for="mismatch-analysis-study-select" class="form-label small">${texts.selectLabel}</label>
-                <select class="form-select form-select-sm" id="mismatch-analysis-study-select">${optionsHTML}</select>
-            </div>
-            <div id="mismatch-analysis-results" class="mt-4">
-                <p class="text-muted text-center">Loading mismatch analysis...</p>
-            </div>
-            <div id="mismatch-analysis-interpretation-container" class="mt-3 small p-3 bg-light rounded"></div>
-        `;
-    }
-
-    function createFeatureImportanceCardHTML(selectedCohort) {
-        const cohortOptions = Object.values(window.APP_CONFIG.COHORTS).map(c => `
-            <option value="${c.id}" ${c.id === selectedCohort ? 'selected' : ''}>${c.displayName}</option>
-        `).join('');
-
-        return `
-            <div class="row">
-                <div class="col-lg-7">
-                    <div class="mb-3">
-                         <label for="feature-importance-cohort-select" class="form-label small">Select Cohort for Analysis:</label>
-                         <select class="form-select form-select-sm" id="feature-importance-cohort-select">
-                            ${cohortOptions}
-                         </select>
-                    </div>
-                    <div id="feature-importance-chart-container" class="w-100" style="min-height: 400px;"></div>
-                </div>
-                <div class="col-lg-5">
-                    <div id="feature-importance-table-container" class="mt-4 pt-4"></div>
-                </div>
-            </div>
-            <div id="feature-importance-interpretation-container" class="mt-3 small p-3 bg-light rounded"></div>
-        `;
-    }
-
     return Object.freeze({
         createDashboardCard,
         createT2CriteriaControls,
@@ -675,8 +606,6 @@ window.uiComponents = (() => {
         createAnalysisContextBannerHTML,
         createAddedValueCardHTML,
         createExportTabContentHTML,
-        createPowerAnalysisCardHTML,
-        createMismatchAnalysisCardHTML,
-        createFeatureImportanceCardHTML
+        createPowerAnalysisCardHTML
     });
 })();

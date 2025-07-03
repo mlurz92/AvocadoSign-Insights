@@ -28,7 +28,6 @@ window.APP_CONFIG = Object.freeze({
         COMPARISON_STUDY_ID: 'Rutegard_2025',
         INSIGHTS_VIEW: 'power-analysis',
         INSIGHTS_POWER_STUDY_ID: 'Rutegard_2025',
-        INSIGHTS_MISMATCH_STUDY_ID: 'Rutegard_2025',
         ACTIVE_TAB_ID: 'publication',
         PUBLICATION_SECTION: 'title_main',
         PUBLICATION_BRUTE_FORCE_METRIC: 'Balanced Accuracy',
@@ -59,8 +58,6 @@ window.APP_CONFIG = Object.freeze({
         COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.2',
         INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.2',
         INSIGHTS_POWER_STUDY_ID: 'avocadoSign_insightsPowerStudyId_v5.2',
-        INSIGHTS_MISMATCH_STUDY_ID: 'avocadoSign_insightsMismatchStudyId_v5.2',
-        INSIGHTS_FEATURE_IMPORTANCE_COHORT: 'avocadoSign_insightsFeatureImportanceCohort_v5.2',
         FIRST_APP_START: 'avocadoSign_appFirstStart_v5.2',
         PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.2',
         EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.2'
@@ -190,23 +187,6 @@ window.APP_CONFIG = Object.freeze({
                 effectSizeLabel: 'Assumed AUC Difference:',
                 postHocResult: 'Achieved Power:',
                 sampleSizeResult: 'Required Sample Size (N):'
-            },
-            mismatchAnalysis: {
-                cardTitle: 'Mismatch Analysis',
-                selectLabel: 'Compare AS against T2 Set:',
-                concordantCorrect: 'Both Correct',
-                concordantIncorrect: 'Both Incorrect',
-                asSuperior: 'AS Correct, T2 Incorrect',
-                t2Superior: 'T2 Correct, AS Incorrect',
-                tooltip_concordantCorrect: 'Cases where both Avocado Sign and the T2 criteria correctly predicted the N-status.',
-                tooltip_concordantIncorrect: 'Cases where both Avocado Sign and the T2 criteria incorrectly predicted the N-status. Click to see patients.',
-                tooltip_asSuperior: 'Cases where the Avocado Sign was correct, but the T2 criteria failed. Click to see patients.',
-                tooltip_t2Superior: 'Cases where the T2 criteria were correct, but the Avocado Sign failed. Click to see patients.'
-            },
-            featureImportance: {
-                cardTitle: 'Feature Importance',
-                chartYAxisLabel: 'T2-weighted Feature',
-                chartXAxisLabel: 'Odds Ratio (log scale)'
             }
         },
         PUBLICATION_TEXTS: Object.freeze({
