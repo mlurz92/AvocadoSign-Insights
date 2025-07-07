@@ -26,24 +26,24 @@ window.titlePageGenerator = (() => {
             const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
             const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
             
-            const asOverallAUC = overallStats?.performanceAS?.auc?.value;
-            const esgarHybridAUC = overallStats?.performanceT2Literature?.['ESGAR_2016_Overall']?.auc?.value;
+            const asOverallAUC = overallStats?.performanceAS?.auc;
+            const esgarHybridAUC = overallStats?.performanceT2Literature?.['ESGAR_2016_Overall']?.auc;
             const esgarHybridComparisonPValue = overallStats?.comparisonASvsT2Literature?.['ESGAR_2016_Overall']?.delong?.pValue;
 
-            const bfT2OverallAUC = bfResultForPub?.auc?.value;
+            const bfT2OverallAUC = bfResultForPub?.auc;
             const bfComparisonPValue = bfComparisonForPub?.delong?.pValue;
             
             const overallSens = overallStats?.performanceAS?.sens;
             const overallSpec = overallStats?.performanceAS?.spec;
 
-            summaryStatementHTML = `<p><strong>In a retrospective study of ${nOverall} patients with rectal cancer, a novel contrast-enhanced MRI feature for predicting nodal status yielded a greater area under the receiver operating characteristic curve than both an optimized T2-based benchmark and recommended T2 criteria from Key studies.</strong></p>`;
+            summaryStatementHTML = `<p><strong>In a retrospective study of ${nOverall} patients with rectal cancer, a novel contrast-enhanced MRI feature for predicting nodal status yielded a greater area under the receiver operating characteristic curve than both an optimized T2-based benchmark and established literature-based criteria.</strong></p>`;
             
             keyResultsHTML = `
                 <h4 style="font-size: 1.1rem; font-weight: bold; margin-top: 1.5rem;">Key Results</h4>
                 <ul style="padding-left: 20px; margin-top: 0.5rem; list-style-position: inside; text-align: left;">
                     <li>In a retrospective analysis of ${nOverall} patients with rectal cancer, a contrast-enhanced MRI feature (the Avocado Sign) predicted patient-level mesorectal nodal status with a sensitivity of ${helpers.formatMetricForPublication(overallSens, 'sens', { includeCI: false, includeCount: true })} and a specificity of ${helpers.formatMetricForPublication(overallSpec, 'spec', { includeCI: false, includeCount: true })}.</li>
-                    <li>The diagnostic performance of the Avocado Sign was superior to that of a computationally optimized, data-driven T2-based benchmark for the overall cohort (area under the receiver operating characteristic curve [AUC], ${helpers.formatValueForPublication(asOverallAUC, 2, false, true)} vs ${helpers.formatValueForPublication(bfT2OverallAUC, 2, false, true)}; ${helpers.formatPValueForPublication(bfComparisonPValue)}).</li>
-                    <li>The Avocado Sign also demonstrated a greater AUC than the recommended T2-based ESGAR criteria for the overall cohort (AUC, ${helpers.formatValueForPublication(asOverallAUC, 2, false, true)} vs ${helpers.formatValueForPublication(esgarHybridAUC, 2, false, true)}; ${helpers.formatPValueForPublication(esgarHybridComparisonPValue)}).</li>
+                    <li>The diagnostic performance of the Avocado Sign was superior to that of a computationally optimized, data-driven T2-based benchmark for the overall cohort (area under the receiver operating characteristic curve [AUC], ${helpers.formatValueForPublication(asOverallAUC?.value, 2, false, true)} vs ${helpers.formatValueForPublication(bfT2OverallAUC?.value, 2, false, true)}; ${helpers.formatPValueForPublication(bfComparisonPValue)}).</li>
+                    <li>The Avocado Sign also demonstrated a greater AUC than the recommended T2-based ESGAR criteria when applied to the overall cohort (AUC, ${helpers.formatValueForPublication(asOverallAUC?.value, 2, false, true)} vs ${helpers.formatValueForPublication(esgarHybridAUC?.value, 2, false, true)}; ${helpers.formatPValueForPublication(esgarHybridComparisonPValue)}).</li>
                 </ul>
             `;
         }

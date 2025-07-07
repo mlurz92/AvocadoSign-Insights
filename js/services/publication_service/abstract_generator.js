@@ -13,21 +13,22 @@ window.abstractGenerator = (() => {
         const perfAS = overallStats.performanceAS;
         const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
-        const bfResultsAvailable = !!(bfResultForPub && bfComparisonForPub);
         
-        const bfComparisonText = bfResultsAvailable
-            ? `(AUC, ${helpers.formatValueForPublication(perfAS?.auc?.value, 2, true)} vs ${helpers.formatValueForPublication(bfResultForPub?.auc?.value, 2, true)}; ${helpers.formatPValueForPublication(bfComparisonForPub?.delong?.pValue)})`
-            : '';
+        let resultsSectionHTML = '<p>Results could not be generated due to missing statistical data.</p>';
 
-        const meanAgeFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.mean, 1);
-        const ageSDFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.sd, 1);
-        
-        const demographicsSentence = `A total of ${nOverall} patients (mean age, ${meanAgeFormatted} years ± ${ageSDFormatted}; ${overallStats.descriptive.sex.m} men) were evaluated.`;
-        const nPositiveText = `${helpers.formatMetricForPublication({ value: nPositive / nOverall, n_success: nPositive, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true })}`;
+        if (perfAS && bfResultForPub && bfComparisonForPub) {
+            const meanAgeFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.mean, 1);
+            const ageSDFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.sd, 1);
+            const nPositiveText = helpers.formatMetricForPublication({ value: nPositive / nOverall, n_success: nPositive, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true });
 
-        const findingsSentence = `Of these, ${nPositiveText} had a positive nodal status. The Avocado Sign yielded an area under the receiver operating characteristic curve (AUC) of ${helpers.formatMetricForPublication(perfAS.auc, 'auc', { includeCount: false })} for the overall cohort. This performance was superior to an optimized, data-driven T2-based benchmark ${bfComparisonText} and to established literature-based criteria.`;
+            const asAucText = helpers.formatMetricForPublication(perfAS.auc, 'auc');
+            const bfAucText = helpers.formatMetricForPublication(bfResultForPub.auc, 'auc');
+            const pValueText = helpers.formatPValueForPublication(bfComparisonForPub.delong.pValue);
 
-        const resultsSectionHTML = `<p>${demographicsSentence} ${findingsSentence}</p>`;
+            const findingsSentence = `A total of ${nOverall} patients (mean age, ${meanAgeFormatted} years ± ${ageSDFormatted}; ${overallStats.descriptive.sex.m} men) were evaluated, of whom ${nPositiveText} had positive nodes at histopathology. For the overall cohort, the Avocado Sign yielded an area under the receiver operating characteristic curve (AUC) of ${asAucText}, which was superior to that of a computationally optimized T2-based benchmark (AUC, ${bfAucText}; ${pValueText}) and established literature-based criteria.`;
+            
+            resultsSectionHTML = `<p>${findingsSentence}</p>`;
+        }
         
         const abstractContentHTML = `
             <div class="structured-abstract">
@@ -44,7 +45,7 @@ window.abstractGenerator = (() => {
                 ${resultsSectionHTML}
                 
                 <h3>Conclusion</h3>
-                <p>The contrast-enhanced Avocado Sign demonstrated superior diagnostic performance for predicting the patient-level mesorectal nodal status compared with both optimized and literature-based T2-weighted criteria, offering a simple and accurate alternative for nodal staging in rectal cancer.</p>
+                <p>The contrast-enhanced Avocado Sign demonstrated superior diagnostic performance for predicting the patient-level mesorectal nodal status compared with both optimized and literature-based T2-weighted criteria, providing a robust and simplified alternative for nodal staging in rectal cancer.</p>
             </div>
         `;
 

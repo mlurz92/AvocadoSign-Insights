@@ -28,8 +28,8 @@ window.publicationHelpers = (() => {
         const finalValue = isPercent ? num * 100 : num;
         let formattedString = finalValue.toFixed(digits);
 
-        if (noLeadingZero && Math.abs(parseFloat(formattedString)) < 1 && (formattedString.startsWith('0.') || formattedString.startsWith('-0.'))) {
-            return formattedString.replace(/^0./, '.');
+        if (noLeadingZero && num > -1 && num < 1 && num !== 0) {
+            return formattedString.replace(/^-?0\./, '.');
         }
         
         return formattedString;
@@ -146,8 +146,7 @@ window.publicationHelpers = (() => {
         });
         tableHtml += `</tbody>`;
 
-        let footerContent = '';
-        let hasNotePrefix = false;
+        let footerParts = [];
         
         if (abbreviations.size > 0) {
             const abbrDefinitions = {
@@ -169,21 +168,15 @@ window.publicationHelpers = (() => {
                 .join(', ');
             
             if (definedAbbrs) {
-                footerContent += `<em>Note.—</em>${definedAbbrs}.`;
-                hasNotePrefix = true;
+                footerParts.push(definedAbbrs);
             }
         }
         if (notes) {
-            if (!hasNotePrefix) {
-                footerContent += `<em>Note.—</em>`;
-            }
-            if (footerContent) {
-                 footerContent += ' ';
-            }
-            footerContent += notes;
+            footerParts.push(notes);
         }
 
-        if (footerContent) {
+        if (footerParts.length > 0) {
+            const footerContent = `<em>Note.—</em>${footerParts.join('. ')}`;
             tableHtml += `<tfoot><tr><td colspan="${headers.length}" style="font-size: 9pt; text-align: left; border: none; padding-top: 0.5em;">${footerContent}</td></tr></tfoot>`;
         }
 

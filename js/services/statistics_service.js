@@ -292,66 +292,6 @@ window.statisticsService = (() => {
         }
     }
     
-    function calculateConfusionMatrix(data, predictionKey, referenceKey) {
-        let tp = 0, fp = 0, fn = 0, tn = 0;
-        if (!Array.isArray(data)) return { tp, fp, fn, tn };
-        data.forEach(p => {
-            if (p && (p[predictionKey] === '+' || p[predictionKey] === '-') && (p[referenceKey] === '+' || p[referenceKey] === '-')) {
-                const predicted = p[predictionKey] === '+';
-                const actual = p[referenceKey] === '+';
-                if (predicted && actual) tp++;
-                else if (predicted && !actual) fp++;
-                else if (!predicted && actual) fn++;
-                else if (!predicted && !actual) tn++;
-            }
-        });
-        return { tp, fp, fn, tn };
-    }
-
-    function calculateDiagnosticPerformance(data, predictionKey, referenceKey) {
-        if (!Array.isArray(data) || data.length === 0) return null;
-        const matrix = calculateConfusionMatrix(data, predictionKey, referenceKey);
-        const { tp, fp, fn, tn } = matrix;
-        const total = tp + fp + fn + tn;
-        const nullMetric = { value: NaN, ci: null, method: null, se: NaN };
-        if (total === 0) return { matrix, sens: nullMetric, spec: nullMetric, ppv: nullMetric, npv: nullMetric, acc: nullMetric, auc: nullMetric, f1: nullMetric, youden: nullMetric };
-
-        const sens_val = (tp + fn) > 0 ? tp / (tp + fn) : NaN;
-        const spec_val = (fp + tn) > 0 ? tn / (fp + tn) : NaN;
-        const ppv_val = (tp + fp) > 0 ? tp / (tp + fp) : NaN;
-        const npv_val = (fn + tn) > 0 ? tn / (fn + tn) : NaN;
-        const acc_val = total > 0 ? (tp + tn) / total : NaN;
-        const auc_val = (!isNaN(sens_val) && !isNaN(spec_val)) ? (sens_val + spec_val) / 2.0 : NaN;
-        const f1_val = (!isNaN(ppv_val) && !isNaN(sens_val) && (ppv_val + sens_val) > 0) ? 2 * (ppv_val * sens_val) / (ppv_val + sens_val) : NaN;
-        const youden_val = (!isNaN(sens_val) && !isNaN(spec_val)) ? (sens_val + spec_val - 1) : NaN;
-
-        const bootstrapFactory = (pKey, rKey, metric) => (sample) => {
-            const m = calculateConfusionMatrix(sample, pKey, rKey);
-            const s = (m.tp + m.fn) > 0 ? m.tp / (m.tp + m.fn) : NaN;
-            const sp = (m.fp + m.tn) > 0 ? m.tn / (m.fp + m.tn) : NaN;
-            const p = (m.tp + m.fp) > 0 ? m.tp / (m.tp + m.fp) : NaN;
-
-            switch (metric) {
-                case 'f1': return (isNaN(p) || isNaN(s) || (p + s) <= 0) ? NaN : 2 * (p * s) / (p + s);
-                case 'auc': return (isNaN(s) || isNaN(sp)) ? NaN : (s + sp) / 2.0;
-                case 'youden': return (isNaN(s) || isNaN(sp)) ? NaN : (s + sp - 1);
-                default: return NaN;
-            }
-        };
-
-        return {
-            matrix,
-            sens: { value: sens_val, ci: calculateWilsonScoreCI(tp, tp + fn), n_success: tp, n_trials: tp + fn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            spec: { value: spec_val, ci: calculateWilsonScoreCI(tn, fp + tn), n_success: tn, n_trials: fp + tn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            ppv: { value: ppv_val, ci: calculateWilsonScoreCI(tp, tp + fp), n_success: tp, n_trials: tp + fp, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            npv: { value: npv_val, ci: calculateWilsonScoreCI(tn, fn + tn), n_success: tn, n_trials: fn + tn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            acc: { value: acc_val, ci: calculateWilsonScoreCI(tp + tn, total), n_success: tp + tn, n_trials: total, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            auc: { value: auc_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'auc')), matrix_components: {tp, fp, fn, tn, total} },
-            f1: { value: f1_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'f1')), matrix_components: {tp, fp, fn, tn, total} },
-            youden: { value: youden_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'youden')), matrix_components: {tp, fp, fn, tn, total} }
-        };
-    }
-    
     function calculatePostHocPower(delongResult, alpha) {
         if (!delongResult || !isFinite(delongResult.Z) || !isFinite(alpha)) return NaN;
         const zAlpha2 = Math.abs(inverseNormalCDF(alpha / 2.0));
@@ -489,6 +429,43 @@ window.statisticsService = (() => {
         return counts;
     }
 
+    function logBeta(a, b) {
+        return logGamma(a) + logGamma(b) - logGamma(a + b);
+    }
+
+    function regularizedIncompleteBeta(x, a, b) {
+        if (x < 0 || x > 1 || a <= 0 || b <= 0) return NaN;
+        if (x === 0) return 0;
+        if (x === 1) return 1;
+
+        const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+        if (x < (a + 1) / (a + b + 2)) {
+            const continuedFraction = (m, a, b) => {
+                const maxIter = 100, epsilon = 1e-14;
+                let am = 1, bm = 1, az = 1, qab = a + b, qap = a + 1, qam = a - 1, bz = 1 - qab * x / qap;
+                for (let i = 1; i <= maxIter; i++) {
+                    let d = i * (b - i) * x / ((qam + 2 * i) * (a + 2 * i));
+                    let ap = az + d * am; let bp = bz + d * bm;
+                    d = -(a + i) * (qab + i) * x / ((a + 2 * i) * (qap + 2 * i));
+                    let app = ap + d * az; let bpp = bp + d * bz;
+                    am = ap / bpp; bm = bp / bpp; az = app / bpp; bz = 1;
+                    if (Math.abs(az - am) < epsilon * Math.abs(az)) return az;
+                }
+                return az;
+            };
+            return bt * continuedFraction(x, a, b) / a;
+        } else {
+            return 1 - regularizedIncompleteBeta(1 - x, b, a);
+        }
+    }
+
+    function tDistributionCDF(t, df) {
+        if (df <= 0) return NaN;
+        const x = df / (df + t * t);
+        const p = 0.5 * regularizedIncompleteBeta(x, df / 2, 0.5);
+        return t > 0 ? 1 - p : p;
+    }
+
     function _calculateWelchTTest(sample1, sample2) {
         const n1 = sample1.length;
         const n2 = sample2.length;
@@ -499,16 +476,23 @@ window.statisticsService = (() => {
         const var1 = Math.pow(getStdDev(sample1), 2);
         const var2 = Math.pow(getStdDev(sample2), 2);
 
-        if (isNaN(mean1) || isNaN(mean2) || isNaN(var1) || isNaN(var2)) {
+        if (isNaN(mean1) || isNaN(mean2) || isNaN(var1) || isNaN(var2) || var1 < 0 || var2 < 0) {
             return { pValue: NaN, method: "Welch's t-test (Invalid input)" };
         }
 
-        const t = (mean1 - mean2) / Math.sqrt(var1 / n1 + var2 / n2);
+        const se_diff = Math.sqrt(var1 / n1 + var2 / n2);
+        if (se_diff < 1e-9) {
+            return { pValue: 1.0, method: "Welch's t-test (Zero Variance)" };
+        }
+
+        const t = (mean1 - mean2) / se_diff;
         const df_num = Math.pow(var1 / n1 + var2 / n2, 2);
         const df_den = (Math.pow(var1 / n1, 2) / (n1 - 1)) + (Math.pow(var2 / n2, 2) / (n2 - 1));
         const df = df_den > 0 ? df_num / df_den : 1;
+        
+        const pValue = 2 * tDistributionCDF(-Math.abs(t), df);
 
-        return { pValue: 1.0, method: "Welch's t-test (CDF not implemented)" };
+        return { pValue: pValue, method: "Welch's t-test" };
     }
     
     function _calculateIndependentAucComparison(auc1, se1, n1, auc2, se2, n2) {
@@ -630,6 +614,66 @@ window.statisticsService = (() => {
         }
 
         return results;
+    }
+
+    function calculateDiagnosticPerformance(data, predictionKey, referenceKey) {
+        if (!Array.isArray(data) || data.length === 0) return null;
+        const matrix = calculateConfusionMatrix(data, predictionKey, referenceKey);
+        const { tp, fp, fn, tn } = matrix;
+        const total = tp + fp + fn + tn;
+        const nullMetric = { value: NaN, ci: null, method: null, se: NaN };
+        if (total === 0) return { matrix, sens: nullMetric, spec: nullMetric, ppv: nullMetric, npv: nullMetric, acc: nullMetric, auc: nullMetric, f1: nullMetric, youden: nullMetric };
+
+        const sens_val = (tp + fn) > 0 ? tp / (tp + fn) : NaN;
+        const spec_val = (fp + tn) > 0 ? tn / (fp + tn) : NaN;
+        const ppv_val = (tp + fp) > 0 ? tp / (tp + fp) : NaN;
+        const npv_val = (fn + tn) > 0 ? tn / (fn + tn) : NaN;
+        const acc_val = total > 0 ? (tp + tn) / total : NaN;
+        const auc_val = (!isNaN(sens_val) && !isNaN(spec_val)) ? (sens_val + spec_val) / 2.0 : NaN;
+        const f1_val = (!isNaN(ppv_val) && !isNaN(sens_val) && (ppv_val + sens_val) > 0) ? 2 * (ppv_val * sens_val) / (ppv_val + sens_val) : NaN;
+        const youden_val = (!isNaN(sens_val) && !isNaN(spec_val)) ? (sens_val + spec_val - 1) : NaN;
+
+        const bootstrapFactory = (pKey, rKey, metric) => (sample) => {
+            const m = calculateConfusionMatrix(sample, pKey, rKey);
+            const s = (m.tp + m.fn) > 0 ? m.tp / (m.tp + m.fn) : NaN;
+            const sp = (m.fp + m.tn) > 0 ? m.tn / (m.fp + m.tn) : NaN;
+            const p = (m.tp + m.fp) > 0 ? m.tp / (m.tp + m.fp) : NaN;
+
+            switch (metric) {
+                case 'f1': return (isNaN(p) || isNaN(s) || (p + s) <= 0) ? NaN : 2 * (p * s) / (p + s);
+                case 'auc': return (isNaN(s) || isNaN(sp)) ? NaN : (s + sp) / 2.0;
+                case 'youden': return (isNaN(s) || isNaN(sp)) ? NaN : (s + sp - 1);
+                default: return NaN;
+            }
+        };
+
+        return {
+            matrix,
+            sens: { value: sens_val, ci: calculateWilsonScoreCI(tp, tp + fn), n_success: tp, n_trials: tp + fn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
+            spec: { value: spec_val, ci: calculateWilsonScoreCI(tn, fp + tn), n_success: tn, n_trials: fp + tn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
+            ppv: { value: ppv_val, ci: calculateWilsonScoreCI(tp, tp + fp), n_success: tp, n_trials: tp + fp, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
+            npv: { value: npv_val, ci: calculateWilsonScoreCI(tn, fn + tn), n_success: tn, n_trials: fn + tn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
+            acc: { value: acc_val, ci: calculateWilsonScoreCI(tp + tn, total), n_success: tp + tn, n_trials: total, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
+            auc: { value: auc_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'auc')), matrix_components: {tp, fp, fn, tn, total} },
+            f1: { value: f1_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'f1')), matrix_components: {tp, fp, fn, tn, total} },
+            youden: { value: youden_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'youden')), matrix_components: {tp, fp, fn, tn, total} }
+        };
+    }
+
+    function calculateConfusionMatrix(data, predictionKey, referenceKey) {
+        let tp = 0, fp = 0, fn = 0, tn = 0;
+        if (!Array.isArray(data)) return { tp, fp, fn, tn };
+        data.forEach(p => {
+            if (p && (p[predictionKey] === '+' || p[predictionKey] === '-') && (p[referenceKey] === '+' || p[referenceKey] === '-')) {
+                const predicted = p[predictionKey] === '+';
+                const actual = p[referenceKey] === '+';
+                if (predicted && actual) tp++;
+                else if (predicted && !actual) fp++;
+                else if (!predicted && actual) fn++;
+                else if (!predicted && !actual) tn++;
+            }
+        });
+        return { tp, fp, fn, tn };
     }
 
     function calculateAddedValue(data) {
