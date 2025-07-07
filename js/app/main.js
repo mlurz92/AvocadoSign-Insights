@@ -6,6 +6,8 @@ class App {
         this.bruteForceModal = null;
         this.libraryStatus = {};
         this.preRenderedPublicationHTML = null;
+        this.isAutoBfRunning = false;
+        this.autoBfQueue = [];
     }
 
     async init() {
@@ -36,16 +38,16 @@ class App {
             this.recalculateAllStats();
             this.refreshCurrentTab();
             
-            if (!loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.FIRST_APP_START)) {
-                window.uiManager.showQuickGuide();
-                saveToLocalStorage(window.APP_CONFIG.STORAGE_KEYS.FIRST_APP_START, true);
-            }
-
             const bfResults = window.bruteForceManager.getAllResults();
             const defaultMetric = window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC;
-            const requiredResultMissing = !bfResults?.Overall?.[defaultMetric];
-            if (requiredResultMissing) {
-                window.uiManager.showToast("Default optimization results not found. Please run brute-force on the 'Analysis' tab for a complete publication.", "warning", 8000);
+            const requiredCohorts = ['Overall', 'surgeryAlone', 'neoadjuvantTherapy'];
+            const areAllBfResultsAvailable = requiredCohorts.every(cohortId => bfResults[cohortId]?.[defaultMetric]);
+            const autoBfDeclined = loadFromLocalStorage('avocadoSign_autoBfDeclined');
+
+            if (!areAllBfResultsAvailable && !autoBfDeclined) {
+                window.uiManager.showAutoBfPrompt();
+            } else if (!areAllBfResultsAvailable && autoBfDeclined) {
+                 window.uiManager.showToast("Default optimization results not found. Please run brute-force on the 'Analysis' tab for a complete publication.", "warning", 8000);
             }
             
             window.uiManager.initializeTooltips(document.body);
@@ -118,31 +120,62 @@ class App {
 
     initializeBruteForceManager() {
         const bfCallbacks = {
-            onStarted: (payload) => window.uiManager.updateBruteForceUI('started', payload, true, window.state.getCurrentCohort()),
-            onProgress: (payload) => window.uiManager.updateBruteForceUI('progress', payload, true, window.state.getCurrentCohort()),
+            onStarted: (payload) => {
+                if (!this.isAutoBfRunning) {
+                    window.uiManager.updateBruteForceUI('started', payload, true, window.state.getCurrentCohort());
+                }
+            },
+            onProgress: (payload) => {
+                if (this.isAutoBfRunning) {
+                    const progressOfCurrentTask = (payload.tested / payload.total);
+                    const completedTasks = this.autoBfQueue.totalTasks - this.autoBfQueue.length - 1;
+                    const totalProgress = ((completedTasks + progressOfCurrentTask) / this.autoBfQueue.totalTasks) * 100;
+                    const statusText = `Analyzing cohort: <strong>${getCohortDisplayName(payload.cohort)}</strong> (${payload.tested} / ${payload.total})...`;
+                    window.uiManager.updateAutoBfProgress(statusText, totalProgress);
+                } else {
+                    window.uiManager.updateBruteForceUI('progress', payload, true, window.state.getCurrentCohort());
+                }
+            },
             onResult: (payload) => {
                 const bfResults = window.bruteForceManager.getAllResults();
                 const cohortBfResults = bfResults[payload.cohort] || {};
-                window.uiManager.updateBruteForceUI('result', cohortBfResults[payload.metric], true, payload.cohort);
-                if (payload?.results?.length > 0) {
-                    this.showBruteForceDetails(payload.metric, payload.cohort);
-                    window.uiManager.showToast('Optimization finished.', 'success');
-                    this.recalculateAllStats();
-                    this.refreshCurrentTab();
+                
+                if (this.isAutoBfRunning) {
+                    this._runNextAutoBf();
                 } else {
-                    window.uiManager.showToast('Optimization finished with no valid results.', 'warning');
+                    window.uiManager.updateBruteForceUI('result', cohortBfResults[payload.metric], true, payload.cohort);
+                    if (payload?.results?.length > 0) {
+                        this.showBruteForceDetails(payload.metric, payload.cohort);
+                        window.uiManager.showToast('Optimization finished.', 'success');
+                        this.recalculateAllStats();
+                        this.refreshCurrentTab();
+                    } else {
+                        window.uiManager.showToast('Optimization finished with no valid results.', 'warning');
+                    }
+                    this.updateUI();
                 }
-                this.updateUI();
             },
             onCancelled: (payload) => {
-                window.uiManager.updateBruteForceUI('cancelled', {}, window.bruteForceManager.isWorkerAvailable(), payload.cohort);
-                window.uiManager.showToast('Optimization cancelled.', 'warning');
-                this.updateUI();
+                if (this.isAutoBfRunning) {
+                    this.isAutoBfRunning = false;
+                    window.uiManager.hideAutoBfModals();
+                    window.uiManager.showToast('Automatic analysis cancelled.', 'warning', 5000);
+                } else {
+                    window.uiManager.updateBruteForceUI('cancelled', {}, window.bruteForceManager.isWorkerAvailable(), payload.cohort);
+                    window.uiManager.showToast('Optimization cancelled.', 'warning');
+                    this.updateUI();
+                }
             },
             onError: (payload) => {
-                window.uiManager.showToast(`Optimization Error: ${payload?.message || 'Unknown'}`, 'danger');
-                window.uiManager.updateBruteForceUI('error', payload, window.bruteForceManager.isWorkerAvailable(), payload.cohort);
-                this.updateUI();
+                if (this.isAutoBfRunning) {
+                    this.isAutoBfRunning = false;
+                    window.uiManager.hideAutoBfModals();
+                    window.uiManager.showToast(`Automatic Analysis Error: ${payload?.message || 'Unknown'}. Please try again manually.`, 'danger', 8000);
+                } else {
+                    window.uiManager.showToast(`Optimization Error: ${payload?.message || 'Unknown'}`, 'danger');
+                    window.uiManager.updateBruteForceUI('error', payload, window.bruteForceManager.isWorkerAvailable(), payload.cohort);
+                    this.updateUI();
+                }
             }
         };
         window.bruteForceManager.init(bfCallbacks);
@@ -539,6 +572,51 @@ class App {
         
         if (changed) {
             this.refreshCurrentTab();
+        }
+    }
+
+    startSequentialBruteForce() {
+        window.uiManager.hideAutoBfModals();
+        window.uiManager.showAutoBfProgress();
+        this.isAutoBfRunning = true;
+        
+        const cohortsToRun = ['Overall', 'surgeryAlone', 'neoadjuvantTherapy'];
+        this.autoBfQueue = cohortsToRun.map(cohortId => ({
+            cohortId: cohortId,
+            metric: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_BRUTE_FORCE_METRIC
+        }));
+        
+        this.autoBfQueue.totalTasks = cohortsToRun.length;
+        
+        this._runNextAutoBf();
+    }
+
+    declineAutoBruteForce() {
+        saveToLocalStorage('avocadoSign_autoBfDeclined', true);
+        window.uiManager.hideAutoBfModals();
+        window.uiManager.showToast("Okay, you can run the optimization manually from the 'Analysis' tab later.", 'info', 5000);
+    }
+
+    _runNextAutoBf() {
+        if (this.autoBfQueue.length > 0) {
+            const nextTask = this.autoBfQueue.shift();
+            const completedTasks = this.autoBfQueue.totalTasks - this.autoBfQueue.length - 1;
+            const progressSoFar = (completedTasks / this.autoBfQueue.totalTasks) * 100;
+            window.uiManager.updateAutoBfProgress(`Preparing analysis for cohort: <strong>${getCohortDisplayName(nextTask.cohortId)}</strong>...`, progressSoFar);
+
+            const dataForWorker = window.dataProcessor.filterDataByCohort(this.processedData, nextTask.cohortId).map(p => ({
+                id: p.id, nStatus: p.nStatus, t2Nodes: p.t2Nodes
+            }));
+            window.bruteForceManager.startAnalysis(dataForWorker, nextTask.metric, nextTask.cohortId);
+        } else {
+            this.isAutoBfRunning = false;
+            window.uiManager.updateAutoBfProgress('All analyses complete!', 100);
+            setTimeout(() => {
+                window.uiManager.hideAutoBfModals();
+                window.uiManager.showToast('Initial analysis complete! All features are now available.', 'success', 5000);
+                this.recalculateAllStats();
+                this.refreshCurrentTab();
+            }, 1500);
         }
     }
 

@@ -98,7 +98,9 @@ window.eventManager = (() => {
             'btn-export-charts-svg': () => app.exportCharts(),
             'btn-edit-publication': () => handlePublicationEditStart(),
             'btn-save-publication': () => handlePublicationSave(),
-            'btn-reset-publication': () => handlePublicationReset()
+            'btn-reset-publication': () => handlePublicationReset(),
+            'btn-confirm-auto-bf': () => app.startSequentialBruteForce(),
+            'btn-decline-auto-bf': () => app.declineAutoBruteForce()
         };
 
         if (singleClickActions[button.id]) {

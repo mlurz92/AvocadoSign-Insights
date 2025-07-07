@@ -402,6 +402,50 @@ window.uiManager = (() => {
         }
     }
 
+    function showAutoBfPrompt() {
+        const modalElement = document.getElementById('auto-bf-prompt-modal');
+        if (!modalElement) return;
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    function showAutoBfProgress() {
+        const modalElement = document.getElementById('auto-bf-progress-modal');
+        if (!modalElement) return;
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    function updateAutoBfProgress(statusText, percentage) {
+        const statusContainer = document.getElementById('auto-bf-progress-status');
+        if (!statusContainer) return;
+        const progressBar = statusContainer.querySelector('.progress-bar');
+        const statusP = statusContainer.querySelector('p');
+
+        if (statusP) {
+            statusP.innerHTML = statusText;
+        }
+        if (progressBar) {
+            const p = Math.max(0, Math.min(100, percentage));
+            progressBar.style.width = `${p}%`;
+            progressBar.setAttribute('aria-valuenow', p);
+            progressBar.textContent = `${Math.round(p)}%`;
+        }
+    }
+
+    function hideAutoBfModals() {
+        const promptModalEl = document.getElementById('auto-bf-prompt-modal');
+        if (promptModalEl) {
+            const modal = bootstrap.Modal.getInstance(promptModalEl);
+            if (modal) modal.hide();
+        }
+        const progressModalEl = document.getElementById('auto-bf-progress-modal');
+        if (progressModalEl) {
+            const modal = bootstrap.Modal.getInstance(progressModalEl);
+            if (modal) modal.hide();
+        }
+    }
+
     return Object.freeze({
         updateCohortButtonsUI,
         renderTabContent,
@@ -420,6 +464,10 @@ window.uiManager = (() => {
         updateExportUI,
         showQuickGuide,
         updateElementHTML,
-        highlightElement
+        highlightElement,
+        showAutoBfPrompt,
+        showAutoBfProgress,
+        updateAutoBfProgress,
+        hideAutoBfModals
     });
 })();
