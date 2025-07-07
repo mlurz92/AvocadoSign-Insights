@@ -88,12 +88,17 @@ This system guarantees that direct statistical tests between diagnostic methods 
         * An **Info Card on the Comparison Basis**, which details the source and definition of the selected T2 criteria set.
 
 ### 3.5. Insights Tab
-* **Purpose:** Provides advanced statistical analyses for deeper interpretation of study results and for planning future research. This tab also uses the **Analysis Context**.
+* **Purpose:** Provides advanced statistical analyses for deeper interpretation of study results and for planning future research. This tab also uses the **Analysis Context** for some of its features.
 * **Components & Workflow:**
+    * **Global Lymph Node Counts:** A prominent header section displays the total number of evaluated lymph nodes for the currently selected **global cohort**, broken down by source: Histopathology (reference standard), Avocado Sign (T1-CE), and T2-weighted sequences (all visible nodes).
+    * **Analysis View Selector:** Buttons allow switching between different advanced analysis modules.
     * **Power Analysis:**
         * **Purpose:** Assesses the statistical power of the performed comparisons.
         * **Functions:** Offers a "Post-hoc" mode to calculate the achieved power of the study (important for non-significant results) and a "Sample Size" mode to estimate the required sample size for future studies.
-        * **Controls:** The user selects a T2 criteria set; the analysis is automatically performed on the correct cohort.
+        * **Controls:** The user selects a T2 criteria set; the analysis is automatically performed on the correct cohort (Analysis Context).
+    * **Aggregate Lymph Node Counts:**
+        * **Purpose:** Provides a detailed breakdown of positive vs. total lymph node counts for a specific, user-selected T2 criteria set from the literature.
+        * **Function:** When a literature set is chosen from the dropdown, the application automatically applies its criteria to the appropriate patient cohort and displays the resulting node counts for Pathology, AS, and T2.
 
 ### 3.6. Publication Tab
 * **Purpose:** An integrated assistant for creating a complete scientific manuscript draft according to the style guidelines of the journal *Radiology*.

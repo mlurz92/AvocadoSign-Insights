@@ -468,12 +468,35 @@ window.statisticsService = (() => {
             testName: fisher.method
         };
     }
+
+    function calculateAggregateNodeCounts(data) {
+        const counts = {
+            pathology: { total: 0, positive: 0 },
+            as: { total: 0, positive: 0 },
+            t2: { total: 0, positive: 0 }
+        };
+        if (!Array.isArray(data)) return counts;
+
+        data.forEach(p => {
+            if (!p) return;
+            counts.pathology.total += p.countPathologyNodes ?? 0;
+            counts.pathology.positive += p.countPathologyNodesPositive ?? 0;
+            counts.as.total += p.countASNodes ?? 0;
+            counts.as.positive += p.countASNodesPositive ?? 0;
+            counts.t2.total += p.countT2Nodes ?? 0;
+            counts.t2.positive += p.countT2NodesPositive ?? 0;
+        });
+        return counts;
+    }
     
     function calculateAllPublicationStats(data, appliedT2Criteria, appliedT2Logic, allBruteForceResults) {
         if (!data || !Array.isArray(data)) return null;
         const results = {};
         const cohorts = Object.values(window.APP_CONFIG.COHORTS).map(c => c.id);
         const allLiteratureSets = window.studyT2CriteriaManager.getAllStudyCriteriaSets();
+
+        const globalEvaluatedData = window.t2CriteriaManager.evaluateDataset(cloneDeep(data), appliedT2Criteria, appliedT2Logic);
+        results.globalAggregateNodeCounts = calculateAggregateNodeCounts(globalEvaluatedData);
 
         cohorts.forEach(cohortId => {
             const cohortData = window.dataProcessor.filterDataByCohort(data, cohortId);
@@ -490,7 +513,8 @@ window.statisticsService = (() => {
                 comparisonASvsT2Bruteforce: {},
                 bruteforceDefinitions: {},
                 addedValueAnalysis: {},
-                associationsApplied: {}
+                associationsApplied: {},
+                aggregateNodeCounts: calculateAggregateNodeCounts(evaluatedDataApplied)
             };
             
             const featuresToTest = [
@@ -514,6 +538,10 @@ window.statisticsService = (() => {
                 results[cohortForSet].performanceT2Literature[studySet.id] = calculateDiagnosticPerformance(evaluatedDataStudy, 't2Status', 'nStatus');
                 results[cohortForSet].comparisonASvsT2Literature[studySet.id] = compareDiagnosticMethods(evaluatedDataStudy, 'asStatus', 't2Status', 'nStatus');
                 results[cohortForSet].addedValueAnalysis[studySet.id] = calculateAddedValue(evaluatedDataStudy);
+                if (!results[cohortForSet].aggregateNodeCountsLiterature) {
+                    results[cohortForSet].aggregateNodeCountsLiterature = {};
+                }
+                results[cohortForSet].aggregateNodeCountsLiterature[studySet.id] = calculateAggregateNodeCounts(evaluatedDataStudy);
             }
         });
         
@@ -552,9 +580,22 @@ window.statisticsService = (() => {
             };
             results.interCohortDemographicComparison = demoComp;
 
+            const cohort1DataRaw = window.dataProcessor.filterDataByCohort(data, 'surgeryAlone');
+            const cohort2DataRaw = window.dataProcessor.filterDataByCohort(data, 'neoadjuvantTherapy');
+    
+            const combinedDataForAS = [
+                ...cohort1DataRaw.map(p => ({ ...p, group: 'surgeryAlone' })),
+                ...cohort2DataRaw.map(p => ({ ...p, group: 'neoadjuvantTherapy' }))
+            ];
+            
+            const combinedDataForT2 = [
+                ...window.t2CriteriaManager.evaluateDataset(cohort1DataRaw, appliedT2Criteria, appliedT2Logic).map(p => ({ ...p, group: 'surgeryAlone' })),
+                ...window.t2CriteriaManager.evaluateDataset(cohort2DataRaw, appliedT2Criteria, appliedT2Logic).map(p => ({ ...p, group: 'neoadjuvantTherapy' }))
+            ];
+
             const interComp = {
-                as: calculateDeLongTest([...window.dataProcessor.filterDataByCohort(data, 'surgeryAlone'), ...window.dataProcessor.filterDataByCohort(data, 'neoadjuvantTherapy')], 'asStatus', 'therapy', 'nStatus'), // Simplified logic, might need refinement
-                t2Applied: calculateDeLongTest([...window.t2CriteriaManager.evaluateDataset(window.dataProcessor.filterDataByCohort(data, 'surgeryAlone'), appliedT2Criteria, appliedT2Logic), ...window.t2CriteriaManager.evaluateDataset(window.dataProcessor.filterDataByCohort(data, 'neoadjuvantTherapy'), appliedT2Criteria, appliedT2Logic)], 't2Status', 'therapy', 'nStatus')
+                as: calculateDeLongTest(combinedDataForAS, 'asStatus', 'group', 'nStatus'),
+                t2Applied: calculateDeLongTest(combinedDataForT2, 't2Status', 'group', 'nStatus')
             };
             results.interCohortComparison = interComp;
         }
@@ -590,7 +631,8 @@ window.statisticsService = (() => {
         calculateAddedValue,
         calculatePostHocPower,
         calculateRequiredSampleSize,
-        calculateAssociationStats
+        calculateAssociationStats,
+        calculateAggregateNodeCounts
     });
 
 })();

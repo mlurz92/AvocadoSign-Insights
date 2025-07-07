@@ -272,9 +272,16 @@ window.resultsGenerator = (() => {
         const interobserverKappa = overallStats?.interobserverKappa;
         const interobserverKappaCI = overallStats?.interobserverKappa?.ci;
 
+        const globalCounts = stats.globalAggregateNodeCounts;
+        let globalCountsText = '';
+        if (globalCounts) {
+             globalCountsText = ` In total, ${helpers.formatValueForPublication(globalCounts.pathology.total, 0)} lymph nodes were examined on histopathology, of which ${helpers.formatValueForPublication(globalCounts.pathology.positive, 0)} (${helpers.formatMetricForPublication({value: globalCounts.pathology.positive / globalCounts.pathology.total}, 'acc', {includeCI: false, includeCount:false})}) were metastatic. On MRI, ${helpers.formatValueForPublication(globalCounts.as.total, 0)} nodes were identified on contrast-enhanced sequences and ${helpers.formatValueForPublication(globalCounts.t2.total, 0)} nodes on T2-weighted sequences.`;
+        }
+
+
         const text = `
             <h3 id="ergebnisse_vergleich_as_vs_t2">Diagnostic Performance and Comparison</h3>
-            <p>The diagnostic performance of the Avocado Sign was evaluated for each patient subgroup. For the entire cohort (n=${commonData.nOverall}), the area under the receiver operating characteristic curve (AUC) was ${helpers.formatMetricForPublication(overallStats?.performanceAS?.auc, 'auc', {includeCount: false})}. The interobserver agreement for the sign was previously reported as almost perfect for this cohort (Cohen’s kappa = ${helpers.formatValueForPublication(interobserverKappa?.value, 2, false, true)}; 95% CI: ${helpers.formatValueForPublication(interobserverKappaCI?.lower, 2, false, true)}, ${helpers.formatValueForPublication(interobserverKappaCI?.upper, 2, false, true)}) ${helpers.getReference('Lurz_Schaefer_2025')}.</p>
+            <p>The diagnostic performance of the Avocado Sign was evaluated for each patient subgroup. For the entire cohort (n=${commonData.nOverall}), the area under the receiver operating characteristic curve (AUC) was ${helpers.formatMetricForPublication(overallStats?.performanceAS?.auc, 'auc', {includeCount: false})}. The interobserver agreement for the sign was previously reported as almost perfect for this cohort (Cohen’s kappa = ${helpers.formatValueForPublication(interobserverKappa?.value, 2, false, true)}; 95% CI: ${helpers.formatValueForPublication(interobserverKappaCI?.lower, 2, false, true)}, ${helpers.formatValueForPublication(interobserverKappaCI?.upper, 2, false, true)}) ${helpers.getReference('Lurz_Schaefer_2025')}.${globalCountsText}</p>
             <p>A detailed comparison of the diagnostic performance of the Avocado Sign against both literature-based and data-driven T2 criteria is presented in Table 4. The Avocado Sign consistently yielded a greater AUC than the established literature-based T2 criteria within their respective, methodologically appropriate cohorts. Its performance was also superior to the data-driven best-case benchmarks in the neoadjuvant-therapy and overall cohorts.</p>
         `;
 

@@ -130,6 +130,7 @@ window.eventManager = (() => {
             'comp-study-select': () => handleComparisonStudyChange(target.value),
             'publication-bf-metric-select': () => handlePublicationBfMetricChange(target.value),
             'power-analysis-study-select': () => handlePowerAnalysisStudyChange(target.value),
+            'node-count-lit-set-select': () => handleNodeCountLitSetChange(target.value),
             'power-mode-posthoc': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats),
             'power-mode-samplesize': () => window.insightsTab.renderPowerAnalysis(app.allPublicationStats)
         };
@@ -236,6 +237,12 @@ window.eventManager = (() => {
     function handlePowerAnalysisStudyChange(studyId) {
         if (window.state.setInsightsPowerStudyId(studyId)) {
             if(window.insightsTab) window.insightsTab.renderPowerAnalysis(app.allPublicationStats);
+        }
+    }
+
+    function handleNodeCountLitSetChange(studyId) {
+        if (window.state.setInsightsLiteratureSetId(studyId)) {
+            if (window.insightsTab) window.insightsTab.renderNodeCountAnalysis(app.allPublicationStats);
         }
     }
     

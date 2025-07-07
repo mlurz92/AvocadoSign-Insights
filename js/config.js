@@ -28,6 +28,7 @@ window.APP_CONFIG = Object.freeze({
         COMPARISON_STUDY_ID: 'Rutegard_2025',
         INSIGHTS_VIEW: 'power-analysis',
         INSIGHTS_POWER_STUDY_ID: 'Rutegard_2025',
+        INSIGHTS_LITERATURE_SET_ID: 'Rutegard_2025',
         ACTIVE_TAB_ID: 'publication',
         PUBLICATION_SECTION: 'title_main',
         PUBLICATION_BRUTE_FORCE_METRIC: 'Balanced Accuracy',
@@ -58,6 +59,7 @@ window.APP_CONFIG = Object.freeze({
         COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.2',
         INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.2',
         INSIGHTS_POWER_STUDY_ID: 'avocadoSign_insightsPowerStudyId_v5.2',
+        INSIGHTS_LITERATURE_SET_ID: 'avocadoSign_insightsLitSetId_v5.2',
         FIRST_APP_START: 'avocadoSign_appFirstStart_v5.2',
         PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.2',
         EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.2'
@@ -176,6 +178,14 @@ window.APP_CONFIG = Object.freeze({
             exportNotAvailable: 'Export function not available.'
         },
         insightsTab: {
+            nodeCountAnalysis: {
+                cardTitle: 'Aggregate Lymph Node Counts',
+                selectLabel: 'Select T2 Criteria Set for Analysis:',
+                resultsHeader: 'Total Lymph Node Counts for Cohort: ',
+                pathologyHeader: 'Histopathology (N)',
+                asHeader: 'Avocado Sign (AS)',
+                t2Header: 'T2-weighted Criteria'
+            },
             powerAnalysis: {
                 cardTitle: 'Power Analysis',
                 selectLabel: 'Compare AS against T2 Set:',

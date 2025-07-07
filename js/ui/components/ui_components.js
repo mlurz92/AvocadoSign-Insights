@@ -595,6 +595,45 @@ window.uiComponents = (() => {
         `;
     }
 
+    function createNodeCountAnalysisCardHTML(selectedLitSetId) {
+        const texts = window.APP_CONFIG.UI_TEXTS.insightsTab.nodeCountAnalysis;
+        const allStudySets = window.studyT2CriteriaManager.getAllStudyCriteriaSets();
+        
+        const createOptions = (sets) => sets.map(set => `<option value="${set.id}" ${selectedLitSetId === set.id ? 'selected' : ''}>${set.name || set.id}</option>`).join('');
+
+        const groupedLitSets = allStudySets.reduce((acc, set) => {
+            const group = set.group || 'Other Literature Criteria';
+            if (!acc[group]) acc[group] = [];
+            acc[group].push(set);
+            return acc;
+        }, {});
+        
+        let optionsHTML = '';
+        const groupOrder = ['ESGAR Criteria', 'Other Literature Criteria'];
+        groupOrder.forEach(groupName => {
+            if (groupedLitSets[groupName]) {
+                optionsHTML += `<optgroup label="${groupName}">${createOptions(groupedLitSets[groupName])}</optgroup>`;
+            }
+        });
+
+        return `
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <h6>Controls</h6>
+                    <div class="mb-3">
+                        <label for="node-count-lit-set-select" class="form-label small">${texts.selectLabel}</label>
+                        <select class="form-select form-select-sm" id="node-count-lit-set-select">${optionsHTML}</select>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div id="node-count-analysis-results" class="w-100">
+                        <p class="text-muted small">Select a criteria set to view aggregate lymph node counts.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     return Object.freeze({
         createDashboardCard,
         createT2CriteriaControls,
@@ -606,6 +645,7 @@ window.uiComponents = (() => {
         createAnalysisContextBannerHTML,
         createAddedValueCardHTML,
         createExportTabContentHTML,
-        createPowerAnalysisCardHTML
+        createPowerAnalysisCardHTML,
+        createNodeCountAnalysisCardHTML
     });
 })();

@@ -17,6 +17,7 @@ This application serves as a specialized research instrument for the in-depth an
 * **Automated Criteria Optimization:** An integrated brute-force algorithm, running in a dedicated Web Worker, systematically identifies the mathematically optimal combination of T2w criteria for a user-selected diagnostic metric.
 * **Advanced Statistical Insights (`Insights` Tab):**
     * **Power Analysis:** Post-hoc calculation of statistical power and a priori estimation of the required sample size for future studies.
+    * **Aggregate Node Counts:** An overview of the total number of evaluated lymph nodes (Pathology, AS, T2) for the selected global cohort, and a detailed breakdown of positive vs. total nodes for specific literature-based criteria sets.
 * **Comprehensive Statistical Analysis:** Automated calculation of all relevant diagnostic performance metrics (sensitivity, specificity, PPV, NPV, accuracy, AUC) including 95% confidence intervals and appropriate statistical comparison tests (e.g., DeLong, McNemar).
 * **Automated Publication Assistant:** A dedicated module that generates a complete, formatted, English-language manuscript draft (including text, tables, and figures) that precisely adheres to the scientific style guidelines of the journal *Radiology* and integrates the power analysis results context-sensitively into the discussion.
 * **Versatile Export Functionality:** Enables the export of the full manuscript, individual tables (Markdown), and all charts (SVG).
@@ -48,7 +49,7 @@ The application is built with Vanilla JavaScript (ES2020+) and follows a modular
 * **State Manager (`js/app/state.js`):** A centralized module for managing the global application state, including the active cohort, sorting preferences, and the crucial "Analysis Context".
 * **Core Modules (`js/core/`):** Handle the fundamental data processing and the management of the various criteria sets.
 * **Service Layer (`js/services/`):** Contains the complex business logic for statistical calculations, the brute-force optimization, and the publication service.
-* **UI Layer (`js/ui/`):** Responsible for rendering all UI components and tabs, including the new `insights_tab.js`.
+* **UI Layer (`js/ui/`):** Responsible for rendering all UI components and tabs, including the `insights_tab.js`.
 * **Web Worker (`workers/brute_force_worker.js`):** The `brute_force_worker.js` file runs the computationally intensive optimization process in a separate thread to keep the main UI responsive.
 
 For a detailed breakdown of each file and function, please consult the **[Application Guide](./docs/Application_Guide.md)**.

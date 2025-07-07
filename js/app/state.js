@@ -18,6 +18,7 @@ window.state = (() => {
             comparisonStudyId: window.APP_CONFIG.DEFAULT_SETTINGS.COMPARISON_STUDY_ID,
             insightsView: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_VIEW,
             insightsPowerStudyId: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_POWER_STUDY_ID,
+            insightsLiteratureSetId: window.APP_CONFIG.DEFAULT_SETTINGS.INSIGHTS_LITERATURE_SET_ID,
             activeTabId: window.APP_CONFIG.DEFAULT_SETTINGS.ACTIVE_TAB_ID,
             publicationEditMode: window.APP_CONFIG.DEFAULT_SETTINGS.PUBLICATION_EDIT_MODE,
             editedManuscriptHTML: window.APP_CONFIG.DEFAULT_SETTINGS.EDITED_MANUSCRIPT_HTML
@@ -38,6 +39,7 @@ window.state = (() => {
             comparisonStudyId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.COMPARISON_STUDY_ID) ?? defaultState.comparisonStudyId,
             insightsView: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_VIEW) ?? defaultState.insightsView,
             insightsPowerStudyId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_POWER_STUDY_ID) ?? defaultState.insightsPowerStudyId,
+            insightsLiteratureSetId: loadFromLocalStorage(window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_LITERATURE_SET_ID) ?? defaultState.insightsLiteratureSetId,
             dataTableSort: cloneDeep(defaultState.dataTableSort),
             analysisTableSort: cloneDeep(defaultState.analysisTableSort),
             activeTabId: defaultState.activeTabId,
@@ -224,6 +226,9 @@ window.state = (() => {
     function getInsightsPowerStudyId() { return currentState.insightsPowerStudyId; }
     function setInsightsPowerStudyId(newStudyId) { return _setter('insightsPowerStudyId', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_POWER_STUDY_ID, newStudyId); }
 
+    function getInsightsLiteratureSetId() { return currentState.insightsLiteratureSetId; }
+    function setInsightsLiteratureSetId(newStudyId) { return _setter('insightsLiteratureSetId', window.APP_CONFIG.STORAGE_KEYS.INSIGHTS_LITERATURE_SET_ID, newStudyId); }
+
     return Object.freeze({
         init,
         getCurrentCohort,
@@ -262,6 +267,8 @@ window.state = (() => {
         getInsightsView,
         setInsightsView,
         getInsightsPowerStudyId,
-        setInsightsPowerStudyId
+        setInsightsPowerStudyId,
+        getInsightsLiteratureSetId,
+        setInsightsLiteratureSetId
     });
 })();
