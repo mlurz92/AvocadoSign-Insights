@@ -2,7 +2,7 @@
 
 This repository contains the source code for the analysis tool **"Nodal Staging: Avocado Sign vs. T2 Criteria"**. This is a standalone, client-side web application designed for advanced, reproducible research in medical imaging, specifically for the nodal staging of rectal cancer.
 
-**Live Application:** The application is directly accessible on the web at: **[avocadosign.pages.dev](https://avocadosign.pages.dev)**
+**Live Application:** The application is directly accessible on the web at: **[avocadosign.pages.dev](https://avocadosign.pages.dev)** or **[avocadosign-insights.pages.dev](https://avocadosign-insights.pages.dev)**
 
 For a comprehensive guide on the scientific background, application features, user workflow, and technical details, please refer to the detailed **[Application Guide](./docs/Application_Guide.md)**.
 
