@@ -150,6 +150,8 @@ window.publicationHelpers = (() => {
         tableHtml += `</tbody>`;
 
         let footerContent = '';
+        let hasNotePrefix = false;
+        
         if (abbreviations.size > 0) {
             const abbrDefinitions = {
                 'AS': 'Avocado Sign',
@@ -170,15 +172,18 @@ window.publicationHelpers = (() => {
                 .join(', ');
             
             if (definedAbbrs) {
-                footerContent += `<em>Note.—</em>${definedAbbrs}. `;
+                footerContent += `<em>Note.—</em>${definedAbbrs}.`;
+                hasNotePrefix = true;
             }
         }
         if (notes) {
-            if (footerContent) {
-                footerContent += notes;
-            } else {
-                footerContent = `<em>Note.—</em>${notes}`;
+            if (!hasNotePrefix) {
+                footerContent += `<em>Note.—</em>`;
             }
+            if (footerContent) {
+                 footerContent += ' ';
+            }
+            footerContent += notes;
         }
 
         if (footerContent) {

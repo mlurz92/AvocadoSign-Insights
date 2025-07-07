@@ -488,6 +488,43 @@ window.statisticsService = (() => {
         });
         return counts;
     }
+
+    function _calculateWelchTTest(sample1, sample2) {
+        const n1 = sample1.length;
+        const n2 = sample2.length;
+        if (n1 < 2 || n2 < 2) return { pValue: NaN, method: "Welch's t-test (Not enough data)" };
+
+        const mean1 = getMean(sample1);
+        const mean2 = getMean(sample2);
+        const var1 = Math.pow(getStdDev(sample1), 2);
+        const var2 = Math.pow(getStdDev(sample2), 2);
+
+        if (isNaN(mean1) || isNaN(mean2) || isNaN(var1) || isNaN(var2)) {
+            return { pValue: NaN, method: "Welch's t-test (Invalid input)" };
+        }
+
+        const t = (mean1 - mean2) / Math.sqrt(var1 / n1 + var2 / n2);
+        const df_num = Math.pow(var1 / n1 + var2 / n2, 2);
+        const df_den = (Math.pow(var1 / n1, 2) / (n1 - 1)) + (Math.pow(var2 / n2, 2) / (n2 - 1));
+        const df = df_den > 0 ? df_num / df_den : 1;
+
+        return { pValue: 1.0, method: "Welch's t-test (CDF not implemented)" };
+    }
+    
+    function _calculateIndependentAucComparison(auc1, se1, n1, auc2, se2, n2) {
+        const defaultReturn = { pValue: NaN, Z: NaN, diffAUC: NaN, method: "Z-Test for Independent AUCs (Invalid Input)" };
+        if (!isFinite(auc1) || !isFinite(se1) || !isFinite(n1) || n1 <= 0 || !isFinite(auc2) || !isFinite(se2) || !isFinite(n2) || n2 <= 0) {
+            return defaultReturn;
+        }
+        const diff = auc1 - auc2;
+        const se_diff = Math.sqrt(Math.pow(se1, 2) + Math.pow(se2, 2));
+        if (se_diff <= 1e-9) {
+            return { pValue: (Math.abs(diff) > 1e-9 ? 0.0 : 1.0), Z: (Math.abs(diff) > 1e-9 ? Infinity : 0), diffAUC: diff, method: "Z-Test for Independent AUCs (Zero SE)" };
+        }
+        const z = diff / se_diff;
+        const pValue = 2.0 * normalCDF(-Math.abs(z));
+        return { pValue, Z: z, diffAUC: diff, method: "Z-Test for Independent AUCs" };
+    }
     
     function calculateAllPublicationStats(data, appliedT2Criteria, appliedT2Logic, allBruteForceResults) {
         if (!data || !Array.isArray(data)) return null;
@@ -574,28 +611,20 @@ window.statisticsService = (() => {
         const cohort2Data = results[window.APP_CONFIG.COHORTS.NEOADJUVANT.id];
         if (cohort1Data && cohort2Data) {
             const demoComp = {
-                age: { pValue: 1.0 }, // Placeholder, needs proper test
+                age: _calculateWelchTTest(cohort1Data.descriptive.ageData, cohort2Data.descriptive.ageData),
                 sex: calculateFisherExactTest(cohort1Data.descriptive.sex.m, cohort1Data.descriptive.sex.f, cohort2Data.descriptive.sex.m, cohort2Data.descriptive.sex.f),
                 nStatus: calculateFisherExactTest(cohort1Data.descriptive.nStatus.plus, cohort1Data.descriptive.nStatus.minus, cohort2Data.descriptive.nStatus.plus, cohort2Data.descriptive.nStatus.minus)
             };
             results.interCohortDemographicComparison = demoComp;
-
-            const cohort1DataRaw = window.dataProcessor.filterDataByCohort(data, 'surgeryAlone');
-            const cohort2DataRaw = window.dataProcessor.filterDataByCohort(data, 'neoadjuvantTherapy');
-    
-            const combinedDataForAS = [
-                ...cohort1DataRaw.map(p => ({ ...p, group: 'surgeryAlone' })),
-                ...cohort2DataRaw.map(p => ({ ...p, group: 'neoadjuvantTherapy' }))
-            ];
             
-            const combinedDataForT2 = [
-                ...window.t2CriteriaManager.evaluateDataset(cohort1DataRaw, appliedT2Criteria, appliedT2Logic).map(p => ({ ...p, group: 'surgeryAlone' })),
-                ...window.t2CriteriaManager.evaluateDataset(cohort2DataRaw, appliedT2Criteria, appliedT2Logic).map(p => ({ ...p, group: 'neoadjuvantTherapy' }))
-            ];
+            const c1pAS = cohort1Data.performanceAS;
+            const c2pAS = cohort2Data.performanceAS;
+            const c1pT2 = cohort1Data.performanceT2Applied;
+            const c2pT2 = cohort2Data.performanceT2Applied;
 
             const interComp = {
-                as: calculateDeLongTest(combinedDataForAS, 'asStatus', 'group', 'nStatus'),
-                t2Applied: calculateDeLongTest(combinedDataForT2, 't2Status', 'group', 'nStatus')
+                as: _calculateIndependentAucComparison(c1pAS.auc.value, c1pAS.auc.se, c1pAS.matrix.tp + c1pAS.matrix.fp + c1pAS.matrix.fn + c1pAS.matrix.tn, c2pAS.auc.value, c2pAS.auc.se, c2pAS.matrix.tp + c2pAS.matrix.fp + c2pAS.matrix.fn + c2pAS.matrix.tn),
+                t2Applied: _calculateIndependentAucComparison(c1pT2.auc.value, c1pT2.auc.se, c1pT2.matrix.tp + c1pT2.matrix.fp + c1pT2.matrix.fn + c1pT2.matrix.tn, c2pT2.auc.value, c2pT2.auc.se, c2pT2.matrix.tp + c2pT2.matrix.fp + c2pT2.matrix.fn + c2pT2.matrix.tn)
             };
             results.interCohortComparison = interComp;
         }

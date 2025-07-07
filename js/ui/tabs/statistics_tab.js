@@ -304,15 +304,16 @@ window.statisticsTab = (() => {
                         <th>Metric</th>
                         <th>${getCohortDisplayName(cohort1)}</th>
                         <th>${getCohortDisplayName(cohort2)}</th>
-                        <th data-tippy-content="P-value from Welch's t-test or Fisher's Exact Test for independent samples.">p-Value (unpaired)</th>
+                        <th data-tippy-content="P-value from unpaired test.">p-Value</th>
+                        <th data-tippy-content="Statistical test used for comparison.">Test Method</th>
                     </tr></thead>
                     <tbody>
-                        <tr><td>Age (Mean ± SD)</td><td>${formatNumber(c1Stats.descriptive.age.mean, 1)} ± ${formatNumber(c1Stats.descriptive.age.sd, 1)}</td><td>${formatNumber(c2Stats.descriptive.age.mean, 1)} ± ${formatNumber(c2Stats.descriptive.age.sd, 1)}</td><td>${getPValueText(interDemoComp?.age?.pValue, false)}</td></tr>
-                        <tr><td>Sex (m / f)</td><td>${c1Stats.descriptive.sex.m} / ${c1Stats.descriptive.sex.f}</td><td>${c2Stats.descriptive.sex.m} / ${c2Stats.descriptive.sex.f}</td><td>${getPValueText(interDemoComp?.sex?.pValue, false)}</td></tr>
-                        <tr><td>N-Status (+ / -)</td><td>${c1Stats.descriptive.nStatus.plus} / ${c1Stats.descriptive.nStatus.minus}</td><td>${c2Stats.descriptive.nStatus.plus} / ${c2Stats.descriptive.nStatus.minus}</td><td>${getPValueText(interDemoComp?.nStatus?.pValue, false)}</td></tr>
-                        <tr class="table-group-divider"><td colspan="4"></td></tr>
-                        <tr><td>AUC (Avocado Sign)</td><td>${formatNumber(c1Stats.performanceAS.auc.value, 3, na_stat, true)}</td><td>${formatNumber(c2Stats.performanceAS.auc.value, 3, na_stat, true)}</td><td>${getPValueText(interComp.as.pValue, false)}</td></tr>
-                        <tr><td>AUC (${formattedAppliedT2Short})</td><td>${formatNumber(c1Stats.performanceT2Applied.auc.value, 3, na_stat, true)}</td><td>${formatNumber(c2Stats.performanceT2Applied.auc.value, 3, na_stat, true)}</td><td>${getPValueText(interComp.t2Applied.pValue, false)}</td></tr>
+                        <tr><td>Age (Mean ± SD)</td><td>${formatNumber(c1Stats.descriptive.age.mean, 1)} ± ${formatNumber(c1Stats.descriptive.age.sd, 1)}</td><td>${formatNumber(c2Stats.descriptive.age.mean, 1)} ± ${formatNumber(c2Stats.descriptive.age.sd, 1)}</td><td>${getPValueText(interDemoComp?.age?.pValue, false)}</td><td>${interDemoComp?.age?.method || na_stat}</td></tr>
+                        <tr><td>Sex (m / f)</td><td>${c1Stats.descriptive.sex.m} / ${c1Stats.descriptive.sex.f}</td><td>${c2Stats.descriptive.sex.m} / ${c2Stats.descriptive.sex.f}</td><td>${getPValueText(interDemoComp?.sex?.pValue, false)}</td><td>${interDemoComp?.sex?.method || na_stat}</td></tr>
+                        <tr><td>N-Status (+ / -)</td><td>${c1Stats.descriptive.nStatus.plus} / ${c1Stats.descriptive.nStatus.minus}</td><td>${c2Stats.descriptive.nStatus.plus} / ${c2Stats.descriptive.nStatus.minus}</td><td>${getPValueText(interDemoComp?.nStatus?.pValue, false)}</td><td>${interDemoComp?.nStatus?.method || na_stat}</td></tr>
+                        <tr class="table-group-divider"><td colspan="5"></td></tr>
+                        <tr><td>AUC (Avocado Sign)</td><td>${formatNumber(c1Stats.performanceAS.auc.value, 3, na_stat, true)}</td><td>${formatNumber(c2Stats.performanceAS.auc.value, 3, na_stat, true)}</td><td>${getPValueText(interComp.as.pValue, false)}</td><td>${interComp.as.method || na_stat}</td></tr>
+                        <tr><td>AUC (${formattedAppliedT2Short})</td><td>${formatNumber(c1Stats.performanceT2Applied.auc.value, 3, na_stat, true)}</td><td>${formatNumber(c2Stats.performanceT2Applied.auc.value, 3, na_stat, true)}</td><td>${getPValueText(interComp.t2Applied.pValue, false)}</td><td>${interComp.t2Applied.method || na_stat}</td></tr>
                     </tbody>
                  </table></div>`;
              }
