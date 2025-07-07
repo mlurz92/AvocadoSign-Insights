@@ -17,6 +17,7 @@ window.publicationService = (() => {
 
     function _generateAbbreviationsHTML(fullHtmlContent) {
         const potentialAbbreviations = {
+            'AJR': 'American Journal of Roentgenology',
             'AS': 'Avocado Sign',
             'AUC': 'Area under the receiver operating characteristic curve',
             'CI': 'Confidence interval',
@@ -35,8 +36,7 @@ window.publicationService = (() => {
             'VIBE': 'volumetric interpolated breath-hold examination'
         };
 
-        const coreAbbreviations = new Set(['AS', 'AUC', 'CI', 'DWI', 'ESGAR', 'nCRT', 'NPV', 'PPV', 'T2w', 'TNT']);
-
+        const coreAbbreviations = new Set(['AS', 'AUC', 'CI', 'DWI', 'ESGAR', 'nCRT', 'NPV', 'PPV', 'T2w', 'TNT', 'AJR']);
         const textContent = fullHtmlContent.replace(/<[^>]+>/g, ' ');
         const counts = {};
 
@@ -115,8 +115,8 @@ window.publicationService = (() => {
             mainBodyHTML += `</section>`;
         });
         
-        const abbreviationsHTML = _generateAbbreviationsHTML(mainBodyHTML);
         let titlePageHTML = generateSectionHTML('title_main', allCohortStats, commonData);
+        const abbreviationsHTML = _generateAbbreviationsHTML(mainBodyHTML);
 
         if (abbreviationsHTML) {
             const tempDiv = document.createElement('div');
@@ -125,12 +125,6 @@ window.publicationService = (() => {
             if (keyResultsList) {
                 keyResultsList.insertAdjacentHTML('afterend', abbreviationsHTML);
                 titlePageHTML = tempDiv.innerHTML;
-            } else {
-                 const summaryStatement = tempDiv.querySelector('p > strong');
-                 if(summaryStatement && summaryStatement.parentElement) {
-                     summaryStatement.parentElement.insertAdjacentHTML('afterend', abbreviationsHTML);
-                     titlePageHTML = tempDiv.innerHTML;
-                 }
             }
         }
         

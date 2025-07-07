@@ -1,11 +1,28 @@
 window.publicationTab = (() => {
 
     function renderWordCounts() {
-        const sectionsWithLimits = window.PUBLICATION_CONFIG.sections.filter(s => s.limit && s.countType);
         const contentArea = document.getElementById('publication-content-area');
         if (!contentArea) return;
 
-        sectionsWithLimits.forEach(section => {
+        // Calculate and display total word count
+        const totalCountContainer = document.getElementById('total-word-count-container');
+        const contentWrapper = document.getElementById('publication-content-wrapper');
+        if (totalCountContainer && contentWrapper) {
+            const sectionsToCount = Array.from(contentWrapper.querySelectorAll('section[id]'));
+            let totalWords = 0;
+            sectionsToCount.forEach(section => {
+                 // Exclude references and STARD checklist from the main word count
+                if (section.id !== 'references_main' && section.id !== 'stard_checklist') {
+                    const text = section.textContent || section.innerText || '';
+                    totalWords += text.trim().split(/\s+/).filter(Boolean).length;
+                }
+            });
+            totalCountContainer.innerHTML = `<span>Total Manuscript Words: <span class="badge bg-primary rounded-pill">${totalWords}</span></span>`;
+        }
+
+        // Calculate and display per-section counts
+        const sectionsWithCounts = window.PUBLICATION_CONFIG.sections.filter(s => s.countType);
+        sectionsWithCounts.forEach(section => {
             const contentElement = contentArea.querySelector(`#${section.id}`);
             const navElement = document.querySelector(`.publication-section-link[data-section-id="${section.id}"]`);
 
@@ -22,20 +39,11 @@ window.publicationTab = (() => {
                 let countIndicator = navElement.querySelector('.word-count-indicator');
                 if (!countIndicator) {
                     countIndicator = document.createElement('span');
-                    countIndicator.className = 'badge rounded-pill ms-2 word-count-indicator';
                     navElement.appendChild(countIndicator);
                 }
                 
-                countIndicator.textContent = `${currentCount} / ${section.limit}`;
-                
-                const ratio = currentCount / section.limit;
-                let bgColorClass = 'bg-success-subtle text-success-emphasis';
-                if (ratio > 1) {
-                    bgColorClass = 'bg-danger text-white';
-                } else if (ratio > 0.9) {
-                    bgColorClass = 'bg-warning-subtle text-warning-emphasis';
-                }
-                countIndicator.className = `badge rounded-pill ms-2 word-count-indicator ${bgColorClass}`;
+                countIndicator.textContent = `${currentCount}`;
+                countIndicator.className = 'badge bg-secondary-subtle text-secondary-emphasis rounded-pill ms-2 word-count-indicator';
             }
         });
     }

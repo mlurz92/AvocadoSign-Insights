@@ -26,7 +26,7 @@ window.methodsGenerator = (() => {
             return '<h3 id="methoden_studienanlage_ethik">Study Design and Patients</h3><p class="text-warning">Patient cohort data is missing.</p>';
         }
 
-        const regulatoryStatement = window.APP_CONFIG.UI_TEXTS.PUBLICATION_TEXTS.MIM_REGULATORY_STATEMENT;
+        const regulatoryStatement = window.APP_CONFIG.UI_TEXTS.PUBLICATION_TEXTS.AJR_TEXTS.REGULATORY_STATEMENT;
         const surgeryAlonePercentString = helpers.formatMetricForPublication({value: nSurgeryAlone / nOverall, n_success: nSurgeryAlone, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true });
         const neoadjuvantPercentString = helpers.formatMetricForPublication({value: nNeoadjuvantTherapy / nOverall, n_success: nNeoadjuvantTherapy, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true });
 
@@ -81,7 +81,8 @@ window.methodsGenerator = (() => {
             'Zhang_2023': 'Zhang et al (2023)',
             'Crimi_2024': 'Crimì et al (2024)',
             'Almlov_2020': 'Almlöv et al (2020)',
-            'Zhuang_2021': 'Zhuang et al (2021)'
+            'Zhuang_2021': 'Zhuang et al (2021)',
+            'Brown_2003': 'Brown et al (2003)'
         };
 
         const addRowsToConfig = (sets) => {

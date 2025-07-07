@@ -214,27 +214,21 @@ function getStatisticalSignificanceSymbol(pValue) {
 
 function getPValueText(pValue, italicizeP = true) {
     const p = parseFloat(pValue);
-    if (p === null || p === undefined || isNaN(p) || !isFinite(p)) return 'N/A';
-
     const pTag = italicizeP ? '<em>P</em>' : 'P';
-
+    
+    if (p === null || p === undefined || isNaN(p) || !isFinite(p)) {
+        return `${pTag} > .99`;
+    }
     if (p < 0.001) return `${pTag} < .001`;
     if (p > 0.99) return `${pTag} > .99`;
     
+    let formattedP;
     if (p < 0.01) {
-        return `${pTag} = .${p.toFixed(3).substring(2)}`;
-    }
-
-    const pRoundedTo2 = parseFloat(p.toFixed(2));
-    if (p < 0.05 && pRoundedTo2 >= 0.05) {
-        return `${pTag} = .${p.toFixed(3).substring(2)}`;
-    }
-
-    let formattedP = p.toFixed(2);
-    if (formattedP.startsWith("0.")) {
-        formattedP = formattedP.substring(1);
-    } else if (formattedP === "1.00") {
-        return `${pTag} > .99`;
+        formattedP = p.toFixed(3).substring(1);
+    } else if (p >= 0.045 && p < 0.05) {
+        formattedP = p.toFixed(3).substring(1);
+    } else {
+        formattedP = p.toFixed(2).substring(1);
     }
     
     return `${pTag} = ${formattedP}`;

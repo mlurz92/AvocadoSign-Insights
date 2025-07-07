@@ -8,13 +8,10 @@ window.publicationHelpers = (() => {
         if (p < 0.001) return '<em>P</em> < .001';
         if (p > 0.99) return '<em>P</em> > .99';
 
-        const pRoundedTo2 = parseFloat(p.toFixed(2));
-        if (p < 0.05 && pRoundedTo2 >= 0.05) {
-            return `<em>P</em> = .${p.toFixed(3).substring(2)}`;
-        }
-
         let formattedP;
         if (p < 0.01) {
+            formattedP = p.toFixed(3).substring(1);
+        } else if (p >= 0.045 && p < 0.05) {
             formattedP = p.toFixed(3).substring(1);
         } else {
             formattedP = p.toFixed(2).substring(1);
@@ -32,7 +29,7 @@ window.publicationHelpers = (() => {
         let formattedString = finalValue.toFixed(digits);
 
         if (noLeadingZero && Math.abs(parseFloat(formattedString)) < 1 && (formattedString.startsWith('0.') || formattedString.startsWith('-0.'))) {
-            return formattedString.replace('0.', '.');
+            return formattedString.replace(/^0./, '.');
         }
         
         return formattedString;

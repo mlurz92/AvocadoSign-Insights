@@ -7,7 +7,7 @@ window.discussionGenerator = (() => {
         }
 
         const helpers = window.publicationHelpers;
-        const { bruteForceMetricForPublication } = commonData;
+        const { bruteForceMetricForPublication, nSurgeryAlone } = commonData;
         const performanceAS = overallStats.performanceAS;
         const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
@@ -28,7 +28,7 @@ window.discussionGenerator = (() => {
         
         let interCohortText = '';
         const interComp = stats?.interCohortComparison?.as;
-        if (interComp && Math.abs(interComp.diffAUC) < 0.2) { // Only comment if the difference is not excessively large
+        if (interComp && Math.abs(interComp.diffAUC) < 0.2) { 
              interCohortText = `This robustness is further underscored by the fact that its diagnostic performance did not significantly differ between the two clinical settings (${helpers.formatPValueForPublication(interComp.pValue)}), suggesting its utility across the entire treatment pathway of rectal cancer. `;
         }
 

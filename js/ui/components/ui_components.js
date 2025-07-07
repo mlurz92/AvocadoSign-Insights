@@ -150,7 +150,7 @@ window.uiComponents = (() => {
             }
             
             const mainLinkClass = (mainSection.subSections && mainSection.subSections.length > 0) ? 'nav-link-main' : '';
-            const wordCountSpan = mainSection.limit ? '<span class="word-count-indicator"></span>' : '';
+            const wordCountSpan = `<span class="word-count-indicator"></span>`;
 
             return `
                 <li class="nav-item">
@@ -161,8 +161,10 @@ window.uiComponents = (() => {
                     ${subNavHTML}
                 </li>`;
         }).join('');
+        
+        const totalCountContainer = `<div id="total-word-count-container" class="p-2 mb-2 border-bottom fw-bold"></div>`;
 
-        return `<nav id="publication-sections-nav" class="nav flex-column nav-pills">${navItems}</nav>`;
+        return totalCountContainer + `<nav id="publication-sections-nav" class="nav flex-column nav-pills">${navItems}</nav>`;
     }
 
     function createBruteForceModalContent(resultsData) {

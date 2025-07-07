@@ -9,7 +9,8 @@ window.DEFAULT_T2_CRITERIA = Object.freeze({
 
 window.APP_CONFIG = Object.freeze({
     APP_NAME: "Nodal Staging: Avocado Sign vs. T2 Criteria",
-    APP_VERSION: "5.2.0-radiology-final",
+    APP_VERSION: "5.3.0-ajr-publication-final",
+    PUBLICATION_TITLE: "Contrast-enhanced versus T2-weighted MRI for Predicting Nodal Status in Rectal Cancer: A Comparative Analysis",
     NA_PLACEHOLDER: '—',
     COHORTS: Object.freeze({
         OVERALL: { id: 'Overall', therapyValue: null, displayName: 'Overall' },
@@ -45,24 +46,23 @@ window.APP_CONFIG = Object.freeze({
         { value: 'Youden-Index', label: 'Youden-Index' }
     ]),
     STORAGE_KEYS: Object.freeze({
-        APPLIED_CRITERIA: 'avocadoSign_appliedT2Criteria_v5.2',
-        APPLIED_LOGIC: 'avocadoSign_appliedT2Logic_v5.2',
-        BRUTE_FORCE_RESULTS: 'avocadoSign_bruteForceResults_v5.2',
-        CURRENT_COHORT: 'avocadoSign_currentCohort_v5.2',
-        PUBLICATION_SECTION: 'avocadoSign_publicationSection_v5.2',
-        PUBLICATION_BRUTE_FORCE_METRIC: 'avocadoSign_publicationBfMetric_v5.2',
-        PUBLICATION_LANG: 'avocadoSign_publicationLang_v5.2',
-        STATS_LAYOUT: 'avocadoSign_statsLayout_v5.2',
-        STATS_COHORT1: 'avocadoSign_statsCohort1_v5.2',
-        STATS_COHORT2: 'avocadoSign_statsCohort2_v5.2',
-        COMPARISON_VIEW: 'avocadoSign_comparisonView_v5.2',
-        COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.2',
-        INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.2',
-        INSIGHTS_POWER_STUDY_ID: 'avocadoSign_insightsPowerStudyId_v5.2',
-        INSIGHTS_LITERATURE_SET_ID: 'avocadoSign_insightsLitSetId_v5.2',
-        FIRST_APP_START: 'avocadoSign_appFirstStart_v5.2',
-        PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.2',
-        EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.2'
+        APPLIED_CRITERIA: 'avocadoSign_appliedT2Criteria_v5.3',
+        APPLIED_LOGIC: 'avocadoSign_appliedT2Logic_v5.3',
+        BRUTE_FORCE_RESULTS: 'avocadoSign_bruteForceResults_v5.3',
+        CURRENT_COHORT: 'avocadoSign_currentCohort_v5.3',
+        PUBLICATION_SECTION: 'avocadoSign_publicationSection_v5.3',
+        PUBLICATION_BRUTE_FORCE_METRIC: 'avocadoSign_publicationBfMetric_v5.3',
+        STATS_LAYOUT: 'avocadoSign_statsLayout_v5.3',
+        STATS_COHORT1: 'avocadoSign_statsCohort1_v5.3',
+        STATS_COHORT2: 'avocadoSign_statsCohort2_v5.3',
+        COMPARISON_VIEW: 'avocadoSign_comparisonView_v5.3',
+        COMPARISON_STUDY_ID: 'avocadoSign_comparisonStudyId_v5.3',
+        INSIGHTS_VIEW: 'avocadoSign_insightsView_v5.3',
+        INSIGHTS_POWER_STUDY_ID: 'avocadoSign_insightsPowerStudyId_v5.3',
+        INSIGHTS_LITERATURE_SET_ID: 'avocadoSign_insightsLitSetId_v5.3',
+        FIRST_APP_START: 'avocadoSign_appFirstStart_v5.3',
+        PUBLICATION_EDIT_MODE: 'avocadoSign_publicationEditMode_v5.3',
+        EDITED_MANUSCRIPT_HTML: 'avocadoSign_editedManuscriptHTML_v5.3'
     }),
     PATHS: Object.freeze({
         BRUTE_FORCE_WORKER: 'workers/brute_force_worker.js'
@@ -200,9 +200,11 @@ window.APP_CONFIG = Object.freeze({
             }
         },
         PUBLICATION_TEXTS: Object.freeze({
-            MIM_REGULATORY_STATEMENT: "This secondary analysis of a retrospective, single-institution study was compliant with the Health Insurance Portability and Accountability Act and approved by our institutional review board, which waived the requirement for additional written informed consent.",
+            AJR_TEXTS: {
+                REGULATORY_STATEMENT: "This secondary analysis of a retrospective, single-institution study was compliant with the Health Insurance Portability and Accountability Act and approved by our institutional review board, which waived the requirement for additional written informed consent."
+            },
             STATISTICAL_ANALYSIS_METHODS: "Descriptive statistics were used to summarize patient characteristics. Diagnostic performance metrics—including sensitivity, specificity, positive predictive value, negative predictive value, and accuracy—were calculated. The Wilson score method was used for 95% confidence intervals (CIs) of proportions. For the area under the receiver operating characteristic curve (AUC), CIs were derived using the bootstrap percentile method with 1000 replications.",
-            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.2.0-radiology-final). A two-sided *P* < .05 was considered to indicate statistical significance."
+            STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.3.0-ajr-publication-final). A two-sided P < .05 was considered to indicate statistical significance."
         }),
         chartTitles: {
             ageDistribution: 'Age Distribution',
@@ -393,10 +395,10 @@ window.APP_CONFIG = Object.freeze({
 window.PUBLICATION_CONFIG = Object.freeze({
     sections: [
         { id: 'title_main', labelKey: 'title_main', subSections: [] },
-        { id: 'abstract_main', labelKey: 'abstract_main', countType: 'word', limit: 300, subSections: [] },
-        { id: 'introduction_main', labelKey: 'introduction_main', countType: 'word', limit: 400, subSections: [] },
+        { id: 'abstract_main', labelKey: 'abstract_main', countType: 'word' },
+        { id: 'introduction_main', labelKey: 'introduction_main', countType: 'word' },
         {
-            id: 'methoden_main', labelKey: 'methoden_main', countType: 'word', limit: 800, subSections: [
+            id: 'methoden_main', labelKey: 'methoden_main', countType: 'word', subSections: [
                 { id: 'methoden_studienanlage_ethik', label: 'Study Design and Patients' },
                 { id: 'methoden_mrt_protokoll_akquisition', label: 'MRI Protocol and Image Analysis' },
                 { id: 'methoden_vergleichskriterien_t2', label: 'Comparative T2 Criteria Sets' },
@@ -405,13 +407,13 @@ window.PUBLICATION_CONFIG = Object.freeze({
             ]
         },
         {
-            id: 'ergebnisse_main', labelKey: 'ergebnisse_main', countType: 'word', limit: 1000, subSections: [
+            id: 'ergebnisse_main', labelKey: 'ergebnisse_main', countType: 'word', subSections: [
                 { id: 'ergebnisse_patientencharakteristika', label: 'Patient Characteristics' },
                 { id: 'ergebnisse_vergleich_as_vs_t2', label: 'Diagnostic Performance and Comparison' }
             ]
         },
-        { id: 'discussion_main', labelKey: 'discussion_main', countType: 'word', limit: 800, subSections: [] },
-        { id: 'references_main', labelKey: 'references_main', countType: 'item', limit: 35, subSections: [] },
+        { id: 'discussion_main', labelKey: 'discussion_main', countType: 'word' },
+        { id: 'references_main', labelKey: 'references_main', countType: 'item' },
         { id: 'stard_checklist', labelKey: 'stard_checklist', subSections: [] }
     ]
 });

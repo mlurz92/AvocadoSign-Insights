@@ -158,19 +158,55 @@ window.insightsTab = (() => {
         const insightsView = window.state.getInsightsView();
         const contentArea = document.getElementById('insights-content-area');
         if (!contentArea) return;
+
+        if (insightsView === 'node-count-analysis') {
+            const currentGlobalCohort = window.state.getCurrentCohort();
+            const globalCohortStats = allStats[currentGlobalCohort];
+            let globalCountsHTML = '';
+            if (globalCohortStats && globalCohortStats.aggregateNodeCounts) {
+                const counts = globalCohortStats.aggregateNodeCounts;
+                const patientCount = globalCohortStats.descriptive.patientCount;
+                globalCountsHTML = `
+                    <div class="col-12 mb-4">
+                        <div class="card bg-light border-2">
+                            <div class="card-header text-center fw-bold">Total Lymph Nodes Evaluated in Cohort: ${getCohortDisplayName(currentGlobalCohort)} (N=${patientCount})</div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h6 class="text-muted">Pathology</h6>
+                                        <p class="h4 mb-0">${formatNumber(counts.pathology.total, 0)}</p>
+                                    </div>
+                                    <div class="col-4">
+                                        <h6 class="text-muted">Avocado Sign (T1-CE)</h6>
+                                        <p class="h4 mb-0">${formatNumber(counts.as.total, 0)}</p>
+                                    </div>
+                                    <div class="col-4">
+                                        <h6 class="text-muted">T2-weighted</h6>
+                                        <p class="h4 mb-0">${formatNumber(counts.t2.total, 0)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+             contentArea.innerHTML = globalCountsHTML;
+        } else {
+            contentArea.innerHTML = '';
+        }
+
         let cardHTML = '';
         
         switch(insightsView) {
             case 'power-analysis':
                 const powerStudyId = window.state.getInsightsPowerStudyId();
                 cardHTML = window.uiComponents.createStatisticsCard('power-analysis', window.APP_CONFIG.UI_TEXTS.insightsTab.powerAnalysis.cardTitle, window.uiComponents.createPowerAnalysisCardHTML(powerStudyId), true);
-                contentArea.innerHTML = `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
+                contentArea.innerHTML += `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
                 _renderPowerAnalysis(allStats);
                 break;
             case 'node-count-analysis':
                 const litSetId = window.state.getInsightsLiteratureSetId();
                 cardHTML = window.uiComponents.createStatisticsCard('node-count-analysis', window.APP_CONFIG.UI_TEXTS.insightsTab.nodeCountAnalysis.cardTitle, window.uiComponents.createNodeCountAnalysisCardHTML(litSetId), true);
-                contentArea.innerHTML = `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
+                contentArea.innerHTML += `<div class="row justify-content-center"><div class="col-xl-10">${cardHTML}</div></div>`;
                 _renderNodeCountAnalysis(allStats);
                 break;
         }
@@ -179,40 +215,8 @@ window.insightsTab = (() => {
     function render(allStats) {
         const insightsView = window.state.getInsightsView();
         const texts = window.APP_CONFIG.UI_TEXTS.insightsTab;
-        const currentGlobalCohort = window.state.getCurrentCohort();
-        const globalCohortStats = allStats[currentGlobalCohort];
         
-        let globalCountsHTML = '<div class="alert alert-secondary small text-center">Global node counts not available for this cohort.</div>';
-        if (globalCohortStats && globalCohortStats.aggregateNodeCounts) {
-            const counts = globalCohortStats.aggregateNodeCounts;
-            const patientCount = globalCohortStats.descriptive.patientCount;
-            globalCountsHTML = `
-                <div class="col-12 mb-4">
-                    <div class="card bg-light border-2">
-                        <div class="card-header text-center fw-bold">Total Lymph Nodes Evaluated in Cohort: ${getCohortDisplayName(currentGlobalCohort)} (N=${patientCount})</div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <h6 class="text-muted">Pathology</h6>
-                                    <p class="h4 mb-0">${formatNumber(counts.pathology.total, 0)}</p>
-                                </div>
-                                <div class="col-4">
-                                    <h6 class="text-muted">Avocado Sign (T1-CE)</h6>
-                                    <p class="h4 mb-0">${formatNumber(counts.as.total, 0)}</p>
-                                </div>
-                                <div class="col-4">
-                                    <h6 class="text-muted">T2-weighted</h6>
-                                    <p class="h4 mb-0">${formatNumber(counts.t2.total, 0)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-
         const html = `
-            ${globalCountsHTML}
             <div class="row mb-4">
                 <div class="col-12 d-flex justify-content-center">
                     <div class="btn-group btn-group-sm" role="group" aria-label="Insights View Selection">

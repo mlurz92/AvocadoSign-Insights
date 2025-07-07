@@ -16,7 +16,7 @@ window.abstractGenerator = (() => {
         const bfResultsAvailable = !!(bfResultForPub && bfComparisonForPub);
         
         const bfComparisonText = bfResultsAvailable
-            ? `(AUC, ${helpers.formatValueForPublication(perfAS?.auc?.value, 2, false, true)} vs ${helpers.formatValueForPublication(bfResultForPub?.auc?.value, 2, false, true)}; ${helpers.formatPValueForPublication(bfComparisonForPub?.delong?.pValue)})`
+            ? `(AUC, ${helpers.formatValueForPublication(perfAS?.auc?.value, 2, true)} vs ${helpers.formatValueForPublication(bfResultForPub?.auc?.value, 2, true)}; ${helpers.formatPValueForPublication(bfComparisonForPub?.delong?.pValue)})`
             : '';
 
         const meanAgeFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.mean, 1);
@@ -25,7 +25,7 @@ window.abstractGenerator = (() => {
         const demographicsSentence = `A total of ${nOverall} patients (mean age, ${meanAgeFormatted} years ± ${ageSDFormatted}; ${overallStats.descriptive.sex.m} men) were evaluated.`;
         const nPositiveText = `${helpers.formatMetricForPublication({ value: nPositive / nOverall, n_success: nPositive, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true })}`;
 
-        const findingsSentence = `Of these, ${nPositiveText} had a positive nodal status. The Avocado Sign yielded an area under the receiver operating characteristic curve (AUC) of ${helpers.formatMetricForPublication(perfAS.auc, 'auc', { includeCI: true })} for the overall cohort. This performance was superior to an optimized, data-driven T2-based benchmark ${bfComparisonText} and to established literature-based criteria.`;
+        const findingsSentence = `Of these, ${nPositiveText} had a positive nodal status. The Avocado Sign yielded an area under the receiver operating characteristic curve (AUC) of ${helpers.formatMetricForPublication(perfAS.auc, 'auc', { includeCount: false })} for the overall cohort. This performance was superior to an optimized, data-driven T2-based benchmark ${bfComparisonText} and to established literature-based criteria.`;
 
         const resultsSectionHTML = `<p>${demographicsSentence} ${findingsSentence}</p>`;
         
