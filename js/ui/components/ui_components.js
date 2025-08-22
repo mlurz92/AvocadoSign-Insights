@@ -442,7 +442,6 @@ window.uiComponents = (() => {
 
     function createAddedValueCardHTML(addedValueStats, t2SetName) {
         const na = window.APP_CONFIG.NA_PLACEHOLDER;
-        const fP = (val, dig = 1) => formatPercent(val, dig, na);
         const fCI_p = (m, k) => { 
             const d = (k === 'auc' || k === 'f1' || k ==='youden' || k === 'balAcc') ? 3 : 1; 
             const p = !(k === 'auc' || k === 'f1' || k ==='youden' || k === 'balAcc'); 
@@ -466,22 +465,22 @@ window.uiComponents = (() => {
                         <tr>
                             <th data-tippy-content="Analysis of subgroups where the initial T2 criteria failed.">Subgroup (T2 Failure)</th>
                             <th data-tippy-content="Number of patients in this subgroup.">N</th>
-                            <th data-tippy-content="Specificity of the Avocado Sign within this subgroup.">AS Specificity</th>
-                            <th data-tippy-content="Sensitivity of the Avocado Sign within this subgroup.">AS Sensitivity</th>
+                            <th data-tippy-content="Specificity of the Avocado Sign within this subgroup.">AS Specificity (95% CI)</th>
+                            <th data-tippy-content="Sensitivity of the Avocado Sign within this subgroup.">AS Sensitivity (95% CI)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>T2 False Positives (T2+, N-)</td>
                             <td>${fpData.count}</td>
-                            <td data-tippy-content="Of the ${fpData.count} patients incorrectly flagged by T2 criteria, the Avocado Sign correctly identified ${fP(fpPerf?.spec?.value, 1)} as negative.">${fCI_p(fpPerf?.spec, 'spec')}</td>
+                            <td data-tippy-content="Of the ${fpData.count} patients incorrectly flagged by T2 criteria, the Avocado Sign correctly identified ${formatPercent(fpPerf?.spec?.value, 1)} as negative.">${fCI_p(fpPerf?.spec, 'spec')}</td>
                             <td>${na}</td>
                         </tr>
                         <tr>
                             <td>T2 False Negatives (T2-, N+)</td>
                             <td>${fnData.count}</td>
                             <td>${na}</td>
-                            <td data-tippy-content="Of the ${fnData.count} patients missed by T2 criteria, the Avocado Sign correctly identified ${fP(fnPerf?.sens?.value, 1)} as positive.">${fCI_p(fnPerf?.sens, 'sens')}</td>
+                            <td data-tippy-content="Of the ${fnData.count} patients missed by T2 criteria, the Avocado Sign correctly identified ${formatPercent(fnPerf?.sens?.value, 1)} as positive.">${fCI_p(fnPerf?.sens, 'sens')}</td>
                         </tr>
                     </tbody>
                 </table>

@@ -118,11 +118,11 @@ window.statisticsTab = (() => {
         
         let tableHtml = `<div class="table-responsive"><table class="table table-sm table-striped small mb-0"><thead><tr>
             <th data-tippy-content="Method or criteria set being evaluated.">Set</th>
-            <th data-tippy-content="${getDefinitionTooltip('sens')}">Sens.</th>
-            <th data-tippy-content="${getDefinitionTooltip('spec')}">Spec.</th>
-            <th data-tippy-content="${getDefinitionTooltip('ppv')}">PPV</th>
-            <th data-tippy-content="${getDefinitionTooltip('npv')}">NPV</th>
-            <th data-tippy-content="${getDefinitionTooltip('auc')}">AUC</th>
+            <th data-tippy-content="${getDefinitionTooltip('sens')}">Sens. (95% CI)</th>
+            <th data-tippy-content="${getDefinitionTooltip('spec')}">Spec. (95% CI)</th>
+            <th data-tippy-content="${getDefinitionTooltip('ppv')}">PPV (95% CI)</th>
+            <th data-tippy-content="${getDefinitionTooltip('npv')}">NPV (95% CI)</th>
+            <th data-tippy-content="${getDefinitionTooltip('auc')}">AUC (95% CI)</th>
             <th data-tippy-content="${getDefinitionTooltip('pValue')}">p-Value (vs AS)</th>
         </tr></thead><tbody>`;
 
@@ -142,11 +142,11 @@ window.statisticsTab = (() => {
 
             tableHtml += `<tr>
                 <td>${r.name}</td>
-                <td>${formatPercent(r.sens?.value, 1, na_stat)}</td>
-                <td>${formatPercent(r.spec?.value, 1, na_stat)}</td>
-                <td>${formatPercent(r.ppv?.value, 1, na_stat)}</td>
-                <td>${formatPercent(r.npv?.value, 1, na_stat)}</td>
-                <td>${formatNumber(r.auc?.value, 3, na_stat, true)}</td>
+                <td data-tippy-content="${getInterpretationTooltip('sens', r.sens)}">${formatCI(r.sens?.value, r.sens?.ci?.lower, r.sens?.ci?.upper, 1, true, na_stat)}</td>
+                <td data-tippy-content="${getInterpretationTooltip('spec', r.spec)}">${formatCI(r.spec?.value, r.spec?.ci?.lower, r.spec?.ci?.upper, 1, true, na_stat)}</td>
+                <td data-tippy-content="${getInterpretationTooltip('ppv', r.ppv)}">${formatCI(r.ppv?.value, r.ppv?.ci?.lower, r.ppv?.ci?.upper, 1, true, na_stat)}</td>
+                <td data-tippy-content="${getInterpretationTooltip('npv', r.npv)}">${formatCI(r.npv?.value, r.npv?.ci?.lower, r.npv?.ci?.upper, 1, true, na_stat)}</td>
+                <td data-tippy-content="${getInterpretationTooltip('auc', r.auc)}">${formatCI(r.auc?.value, r.auc?.ci?.lower, r.auc?.ci?.upper, 3, false, na_stat)}</td>
                 <td data-tippy-content="${pValueTooltip}">${pValueCellContent}</td>
             </tr>`;
         });
@@ -199,7 +199,11 @@ window.statisticsTab = (() => {
 
                 innerContainer.innerHTML += window.uiComponents.createStatisticsCard(`descriptive-stats-${i}`, 'Descriptive Statistics', createDescriptiveStatsContentHTML(stats, i, cohortId), true, 'descriptiveStatistics', cohortId);
 
-                const fCI_p_stat = (m, k) => { const d = (k === 'auc' || k ==='f1' || k==='youden' || k === 'balAcc') ? 3 : 1; const p = !(k === 'auc'||k==='f1'||k==='youden' || k === 'balAcc'); return formatCI(m?.value, m?.ci?.lower, m?.ci?.upper, d, p, na_stat); };
+                const fCI_p_stat = (m, k) => { 
+                    const d = (k === 'auc' || k ==='f1' || k==='youden' || k === 'balAcc') ? 3 : 1; 
+                    const p = !(k === 'auc'||k==='f1'||k==='youden' || k === 'balAcc'); 
+                    return formatCI(m?.value, m?.ci?.lower, m?.ci?.upper, d, p, na_stat); 
+                };
                 
                 const createPerfTableHTML = (perfStats) => {
                     if (!perfStats || typeof perfStats.matrix !== 'object') return '<p class="text-muted small p-2">No diagnostic performance data.</p>';
