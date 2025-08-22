@@ -1,42 +1,5 @@
 window.dataProcessor = (() => {
 
-    function _deduplicateRawData(rawData) {
-        if (!Array.isArray(rawData)) return [];
-        const patientMap = new Map();
-        const mergedPatientIDs = new Set();
-
-        rawData.forEach(patient => {
-            if (!patient || !patient.lastName || !patient.birthDate) return;
-            const key = `${patient.lastName.toLowerCase()}_${patient.birthDate}`;
-            
-            if (!patientMap.has(key)) {
-                patientMap.set(key, JSON.parse(JSON.stringify(patient)));
-            } else {
-                const existingPatient = patientMap.get(key);
-                mergedPatientIDs.add(existingPatient.id).add(patient.id);
-
-                if (Array.isArray(patient.t2Nodes)) {
-                    existingPatient.t2Nodes = [...(existingPatient.t2Nodes || []), ...patient.t2Nodes];
-                }
-                if (patient.notes && !existingPatient.notes.includes(patient.notes)) {
-                    existingPatient.notes = [existingPatient.notes, patient.notes].filter(Boolean).join('; ');
-                }
-                if (patient.id < existingPatient.id) {
-                    const { t2Nodes, notes, ...primaryFields } = patient;
-                    Object.assign(existingPatient, primaryFields, { t2Nodes: existingPatient.t2Nodes, notes: existingPatient.notes });
-                }
-            }
-        });
-
-        if (mergedPatientIDs.size > 0) {
-            console.warn(`Data Integrity Warning: Potential duplicate patient entries were detected and merged. Affected original IDs: ${Array.from(mergedPatientIDs).sort((a,b) => a-b).join(', ')}. Please verify data source if this is unexpected.`);
-        }
-
-        const uniquePatients = Array.from(patientMap.values());
-        uniquePatients.sort((a, b) => a.id - b.id);
-        return uniquePatients;
-    }
-
     function calculateAge(birthDateStr, examDateStr) {
         if (!birthDateStr || !examDateStr) return null;
         try {
@@ -95,8 +58,8 @@ window.dataProcessor = (() => {
     function processAllData(rawData) {
         if (!Array.isArray(rawData)) return [];
         if (typeof window.APP_CONFIG === 'undefined') return [];
-        const deduplicatedData = _deduplicateRawData(rawData);
-        return deduplicatedData.map((patient, index) => processSinglePatient(patient, index));
+        // Die Deduplizierungsfunktion wurde entfernt. Die Rohdaten werden direkt verarbeitet.
+        return rawData.map((patient, index) => processSinglePatient(patient, index));
     }
 
     function filterDataByCohort(data, cohortId) {
