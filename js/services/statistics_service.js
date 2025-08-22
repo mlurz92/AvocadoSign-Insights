@@ -647,6 +647,15 @@ window.statisticsService = (() => {
             }
         };
 
+        const createBootstrapResult = (metric) => {
+            const bsResult = bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, metric));
+            return {
+                ci: { lower: bsResult.lower, upper: bsResult.upper },
+                method: bsResult.method,
+                se: bsResult.se
+            };
+        };
+
         return {
             matrix,
             sens: { value: sens_val, ci: calculateWilsonScoreCI(tp, tp + fn), n_success: tp, n_trials: tp + fn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
@@ -654,9 +663,9 @@ window.statisticsService = (() => {
             ppv: { value: ppv_val, ci: calculateWilsonScoreCI(tp, tp + fp), n_success: tp, n_trials: tp + fp, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
             npv: { value: npv_val, ci: calculateWilsonScoreCI(tn, fn + tn), n_success: tn, n_trials: fn + tn, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
             acc: { value: acc_val, ci: calculateWilsonScoreCI(tp + tn, total), n_success: tp + tn, n_trials: total, method: window.APP_CONFIG.STATISTICAL_CONSTANTS.DEFAULT_CI_METHOD_PROPORTION },
-            auc: { value: auc_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'auc')), matrix_components: {tp, fp, fn, tn, total} },
-            f1: { value: f1_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'f1')), matrix_components: {tp, fp, fn, tn, total} },
-            youden: { value: youden_val, ...bootstrapCI(data, bootstrapFactory(predictionKey, referenceKey, 'youden')), matrix_components: {tp, fp, fn, tn, total} }
+            auc: { value: auc_val, ...createBootstrapResult('auc'), matrix_components: {tp, fp, fn, tn, total} },
+            f1: { value: f1_val, ...createBootstrapResult('f1'), matrix_components: {tp, fp, fn, tn, total} },
+            youden: { value: youden_val, ...createBootstrapResult('youden'), matrix_components: {tp, fp, fn, tn, total} }
         };
     }
 
