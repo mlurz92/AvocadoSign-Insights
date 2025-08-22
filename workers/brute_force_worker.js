@@ -298,7 +298,7 @@ function runBruteForce() {
         const topResults = [];
         const precision = 1e-8;
         let rank = 0;
-        let countAtRank = 0;
+        let displayedCount = 0;
         let lastScore = Infinity;
 
         for (let i = 0; i < validResults.length; i++) {
