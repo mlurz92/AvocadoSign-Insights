@@ -12,6 +12,7 @@ class App {
 
     async init() {
         try {
+            this.registerServiceWorker();
             this.libraryStatus = await this.checkDependencies();
             
             Object.entries(this.libraryStatus).forEach(([lib, status]) => {
@@ -61,6 +62,16 @@ class App {
             } else {
                  document.body.innerHTML = `<div class="alert alert-danger m-5"><strong>Fatal Initialization Error:</strong> ${error.message}. App container not found.</div>`;
             }
+        }
+    }
+
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                })
+                .catch(error => {
+                });
         }
     }
 
