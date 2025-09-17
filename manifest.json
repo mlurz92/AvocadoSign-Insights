@@ -1,12 +1,12 @@
 {
-  "name": "Diagnostische Patientenpfade",
-  "short_name": "Patientenpfade",
-  "description": "Klinische Leitlinien für die bildgebende Diagnostik in der Onkologie.",
+  "name": "Nodal Staging Analysis Tool",
+  "short_name": "Nodal Staging",
+  "description": "Ein wissenschaftliches Analyse-Tool zur Beurteilung des Lymphknotenstatus beim Rektumkarzinom mittels Avocado Sign vs. T2-Kriterien.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#e3000b",
-  "orientation": "portrait-primary",
+  "background_color": "#f8f9fa",
+  "theme_color": "#005f73",
+  "orientation": "any",
   "icons": [
     {
       "src": "data/logo.svg",
@@ -25,6 +25,20 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/screenshot1.png",
+      "type": "image/png",
+      "sizes": "1080x1920",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "images/screenshot2.png",
+      "type": "image/png",
+      "sizes": "1920x1080",
+      "form_factor": "wide"
     }
   ]
 }
