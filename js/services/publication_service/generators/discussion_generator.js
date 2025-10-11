@@ -55,8 +55,15 @@ window.generators.discussionGenerator = (() => {
         const surgeryBfComparison = surgeryStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
         const neoadjuvantBfComparison = neoadjuvantStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
 
+        const surgeryPerfBF = surgeryStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
+        const neoadjuvantPerfBF = neoadjuvantStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
+
         const surgerySensText = getMetricText(surgeryPerfAS?.sens, 'sens');
+        const surgerySpecText = getMetricText(surgeryPerfAS?.spec, 'spec');
         const neoadjuvantSensText = getMetricText(neoadjuvantPerfAS?.sens, 'sens');
+        const neoadjuvantSpecText = getMetricText(neoadjuvantPerfAS?.spec, 'spec');
+        const surgeryBfSensText = getMetricText(surgeryPerfBF?.sens, 'sens');
+        const neoadjuvantBfSensText = getMetricText(neoadjuvantPerfBF?.sens, 'sens');
         const surgeryPValueText = surgeryBfComparison?.delong ? helpers.formatPValueForPublication(surgeryBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
         const neoadjuvantPValueText = neoadjuvantBfComparison?.delong ? helpers.formatPValueForPublication(neoadjuvantBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
 
