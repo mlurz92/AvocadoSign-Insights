@@ -1,5 +1,31 @@
 window.uiManager = (() => {
 
+    function updateLayoutMetrics() {
+        const header = document.querySelector('header.fixed-top');
+        const nav = document.querySelector('nav.navigation-tabs');
+        if (!header || !nav || !document.body) return;
+
+        const root = document.documentElement;
+        const isMobileLayout = typeof window.matchMedia === 'function'
+            ? window.matchMedia('(max-width: 991.98px)').matches
+            : window.innerWidth <= 991;
+
+        const headerHeight = Math.ceil(header.getBoundingClientRect().height);
+        const navHeight = Math.ceil(nav.getBoundingClientRect().height);
+
+        root.style.setProperty('--header-height', `${headerHeight}px`);
+        root.style.setProperty('--nav-height', `${navHeight}px`);
+
+        if (isMobileLayout) {
+            document.body.style.setProperty('--sticky-header-offset', '0px');
+            nav.style.top = '';
+            return;
+        }
+
+        document.body.style.setProperty('--sticky-header-offset', `${headerHeight + navHeight}px`);
+        nav.style.top = `${headerHeight}px`;
+    }
+
     function updateCohortButtonsUI(currentCohortId, isLocked) {
         if (!window.APP_CONFIG) return;
         const cohortButtonGroup = document.querySelector('.btn-group[aria-label="Cohort Selection"]');
@@ -447,6 +473,7 @@ window.uiManager = (() => {
     }
 
     return Object.freeze({
+        updateLayoutMetrics,
         updateCohortButtonsUI,
         renderTabContent,
         attachRowCollapseListeners,

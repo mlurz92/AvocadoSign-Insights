@@ -23,6 +23,12 @@ window.eventManager = (() => {
         }
     }, 350);
 
+    const debouncedLayoutUpdate = debounce(() => {
+        if (window.uiManager?.updateLayoutMetrics) {
+            window.uiManager.updateLayoutMetrics();
+        }
+    }, 150);
+
     function init(appInstance) {
         app = appInstance;
         document.body.addEventListener('click', handleBodyClick);
@@ -31,6 +37,20 @@ window.eventManager = (() => {
         const mainTabEl = document.getElementById('main-tabs');
         if (mainTabEl) {
             mainTabEl.addEventListener('shown.bs.tab', handleTabShown);
+        }
+
+        window.addEventListener('resize', debouncedLayoutUpdate);
+        window.addEventListener('orientationchange', debouncedLayoutUpdate);
+
+        const ensureLayoutMetrics = () => window.uiManager?.updateLayoutMetrics?.();
+        if (document.readyState === 'complete') {
+            ensureLayoutMetrics();
+        } else {
+            const onLoad = () => {
+                ensureLayoutMetrics();
+                window.removeEventListener('load', onLoad);
+            };
+            window.addEventListener('load', onLoad);
         }
     }
 
