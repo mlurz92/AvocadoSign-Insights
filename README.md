@@ -2,7 +2,7 @@
 
 Dieses Repository enthält den Quellcode für das Analyse-Tool **"Nodal Staging: Avocado Sign vs. T2 Criteria"**. Es handelt sich um eine eigenständige, clientseitige Webanwendung, die als wissenschaftliches Forschungsinstrument für die radiologische Diagnostik des Rektumkarzinoms konzipiert ist.
 
-**Live-Anwendung:** Die Anwendung ist direkt im Web erreichbar unter: **[avocadosign.pages.dev](https://avocadosign.pages.dev)**
+**Live-Anwendung:** Die Anwendung ist direkt im Web erreichbar unter: **[avocadosign-insights.pages.dev](https://avocadosign-insights.pages.dev)**
 
 ---
 
