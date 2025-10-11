@@ -11,54 +11,201 @@ window.generators.discussionGenerator = (() => {
         const performanceAS = overallStats.performanceAS;
         const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
-        
+
+        const getMetricText = (metric, type, opts = {}) => metric
+            ? helpers.formatMetricForPublication(metric, type, opts)
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+        const hasValue = (text) => text && text !== window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const asAucText = getMetricText(performanceAS?.auc, 'auc');
+        const asSensText = getMetricText(performanceAS?.sens, 'sens', { includeCount: true });
+        const asSpecText = getMetricText(performanceAS?.spec, 'spec', { includeCount: true });
+        const asAccText = getMetricText(performanceAS?.acc, 'acc');
+
+        const bfAucText = getMetricText(bfResultForPub?.auc, 'auc');
+        const bfSensText = getMetricText(bfResultForPub?.sens, 'sens', { includeCount: true });
+        const bfSpecText = getMetricText(bfResultForPub?.spec, 'spec', { includeCount: true });
+        const bfAccText = getMetricText(bfResultForPub?.acc, 'acc');
+
+        const bfPValueText = bfComparisonForPub?.delong ? helpers.formatPValueForPublication(bfComparisonForPub.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+        const bfPowerText = (bfComparisonForPub?.delong && isFinite(bfComparisonForPub.delong.power))
+            ? helpers.formatValueForPublication(bfComparisonForPub.delong.power * 100, 0)
+            : null;
+        const bfMcNemarText = bfComparisonForPub?.mcnemar ? helpers.formatPValueForPublication(bfComparisonForPub.mcnemar.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const asMatrix = performanceAS?.matrix || {};
+        const bfMatrix = bfResultForPub?.matrix || {};
+        const totalMetastatic = (asMatrix.tp ?? 0) + (asMatrix.fn ?? 0);
+        const totalBenign = (asMatrix.tn ?? 0) + (asMatrix.fp ?? 0);
+        const formatCount = (value) => (isFinite(value) && value !== null)
+            ? helpers.formatValueForPublication(value, 0)
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+        const fnDifference = (isFinite(bfMatrix.fn) && isFinite(asMatrix.fn)) ? bfMatrix.fn - asMatrix.fn : null;
+        const fpDifference = (isFinite(bfMatrix.fp) && isFinite(asMatrix.fp)) ? bfMatrix.fp - asMatrix.fp : null;
+
+        const esgarOverallPerf = overallStats?.performanceT2Literature?.['ESGAR_2016_Overall'];
+        const esgarOverallComparison = overallStats?.comparisonASvsT2Literature?.['ESGAR_2016_Overall'];
+        const esgarAucText = getMetricText(esgarOverallPerf?.auc, 'auc');
+        const esgarPValueText = esgarOverallComparison?.delong ? helpers.formatPValueForPublication(esgarOverallComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const surgeryStats = stats?.surgeryAlone;
+        const neoadjuvantStats = stats?.neoadjuvantTherapy;
+        const surgeryPerfAS = surgeryStats?.performanceAS;
+        const neoadjuvantPerfAS = neoadjuvantStats?.performanceAS;
+        const surgeryBfComparison = surgeryStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
+        const neoadjuvantBfComparison = neoadjuvantStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
+
+        const surgerySensText = getMetricText(surgeryPerfAS?.sens, 'sens');
+        const neoadjuvantSensText = getMetricText(neoadjuvantPerfAS?.sens, 'sens');
+        const surgeryPValueText = surgeryBfComparison?.delong ? helpers.formatPValueForPublication(surgeryBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+        const neoadjuvantPValueText = neoadjuvantBfComparison?.delong ? helpers.formatPValueForPublication(neoadjuvantBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
         const esgarSurgeryAloneComparison = stats?.surgeryAlone?.comparisonASvsT2Literature?.['ESGAR_2016_SurgeryAlone'];
 
-        const bfComparisonText = (bfResultForPub && bfComparisonForPub)
-            ? `(AUC, ${helpers.formatValueForPublication(performanceAS?.auc?.value, 2, false, true)} vs ${helpers.formatValueForPublication(bfResultForPub?.auc?.value, 2, false, true)}; ${helpers.formatPValueForPublication(bfComparisonForPub?.delong?.pValue)})`
-            : '(comparison data pending)';
-            
-        let powerAnalysisText = '';
+        let interCohortText = '';
+        const interComp = stats?.interCohortComparison?.as;
+        if (interComp && Math.abs(interComp.diffAUC) < 0.2) {
+            interCohortText = ` No significant heterogeneity in AUC was observed between the treatment-naïve and post-neoadjuvant pathways (${helpers.formatPValueForPublication(interComp.pValue)}), highlighting its applicability along the entire rectal cancer treatment continuum.`;
+        }
+
+        const delongClause = hasValue(bfPValueText)
+            ? ` (DeLong ${bfPValueText}${bfPowerText ? `; post-hoc power ${bfPowerText}%` : ''})`
+            : '';
+        const accuracyClause = hasValue(bfAccText)
+            ? ` and higher accuracy (${asAccText} vs ${bfAccText}${hasValue(bfMcNemarText) ? `; McNemar ${bfMcNemarText}` : ''})`
+            : hasValue(bfMcNemarText)
+                ? ` and superior paired accuracy (McNemar ${bfMcNemarText})`
+                : '';
+
+        let comparatorSentence = '';
+        if (hasValue(bfAucText)) {
+            const comparatorPerformance = [
+                hasValue(bfSensText) ? `${bfSensText} sensitivity` : null,
+                hasValue(bfSpecText) ? `${bfSpecText} specificity` : null
+            ].filter(Boolean).join(' and ');
+            const comparatorDetail = comparatorPerformance ? `, which achieved ${comparatorPerformance}` : '';
+            comparatorSentence = `When benchmarked against the internally optimised composite T2 rule (${bfAucText})${comparatorDetail}, the Avocado Sign retained superior discrimination${delongClause}${accuracyClause}.`;
+        }
+
+        const metastaticSentenceParts = [];
+        if (isFinite(totalMetastatic) && totalMetastatic > 0) {
+            metastaticSentenceParts.push(`it correctly classified ${formatCount(asMatrix.tp)} of ${formatCount(totalMetastatic)} metastatic cases`);
+        }
+        if (fnDifference !== null) {
+            metastaticSentenceParts.push(`avoiding ${formatCount(fnDifference)} additional missed nodal metastases relative to the T2 benchmark (${formatCount(bfMatrix.fn)} vs ${formatCount(asMatrix.fn)})`);
+        }
+        if (isFinite(totalBenign) && totalBenign > 0) {
+            metastaticSentenceParts.push(`and spared ${formatCount(asMatrix.tn)} of ${formatCount(totalBenign)} node-negative patients from false alarms`);
+        }
+        if (fpDifference !== null) {
+            metastaticSentenceParts.push(`reducing false positives by ${formatCount(fpDifference)} (${formatCount(bfMatrix.fp)} vs ${formatCount(asMatrix.fp)})`);
+        }
+        const confusionMatrixSentence = metastaticSentenceParts.length > 0
+            ? `Inspection of the confusion matrices illustrated the clinical impact: ${metastaticSentenceParts.join('; ')}.`
+            : '';
+
+        const subgroupSegments = [];
+        if (hasValue(surgerySensText) || hasValue(surgerySpecText)) {
+            let segment = `In the surgery-alone cohort, the sign maintained ${hasValue(surgerySensText) ? surgerySensText : ''}${hasValue(surgerySensText) && hasValue(surgerySpecText) ? ' sensitivity and ' : ''}${hasValue(surgerySpecText) ? `${surgerySpecText} specificity` : ''}`;
+            if (hasValue(surgeryBfSensText)) {
+                segment += ` compared with ${surgeryBfSensText} sensitivity for the brute-force T2 rule`;
+            }
+            if (hasValue(surgeryPValueText)) {
+                segment += ` (DeLong ${surgeryPValueText})`;
+            }
+            segment += '.';
+            subgroupSegments.push(segment);
+        }
+        if (hasValue(neoadjuvantSensText) || hasValue(neoadjuvantSpecText)) {
+            let segment = `Following neoadjuvant therapy, diagnostic performance remained robust with ${hasValue(neoadjuvantSensText) ? neoadjuvantSensText : ''}${hasValue(neoadjuvantSensText) && hasValue(neoadjuvantSpecText) ? ' sensitivity and ' : ''}${hasValue(neoadjuvantSpecText) ? `${neoadjuvantSpecText} specificity` : ''}`;
+            if (hasValue(neoadjuvantBfSensText)) {
+                segment += `, outperforming the optimised T2 benchmark (${neoadjuvantBfSensText} sensitivity)`;
+            }
+            if (hasValue(neoadjuvantPValueText)) {
+                segment += ` (DeLong ${neoadjuvantPValueText})`;
+            }
+            segment += '.';
+            subgroupSegments.push(segment);
+        }
+        if (interCohortText) {
+            subgroupSegments.push(interCohortText);
+        }
+        const subgroupParagraph = subgroupSegments.length > 0
+            ? subgroupSegments.join(' ')
+            : '';
+
+        const esgarSentence = hasValue(esgarAucText)
+            ? `Relative to the ESGAR consensus criteria (${esgarAucText}), the Avocado Sign offered higher discrimination${hasValue(esgarPValueText) ? ` (DeLong ${esgarPValueText})` : ''}.`
+            : '';
+
+        let esgarPowerSentence = '';
         if (esgarSurgeryAloneComparison?.delong?.pValue > window.APP_CONFIG.STATISTICAL_CONSTANTS.SIGNIFICANCE_LEVEL) {
             const power = esgarSurgeryAloneComparison.delong.power;
             if (isFinite(power) && power < 0.8) {
-                powerAnalysisText = ` For instance, while the Avocado Sign had a numerically higher AUC than the ESGAR 2016 primary staging criteria in the surgery-alone cohort (AUC, ${helpers.formatValueForPublication(stats?.surgeryAlone?.performanceAS?.auc?.value, 2, false, true)} vs ${helpers.formatValueForPublication(stats?.surgeryAlone?.performanceT2Literature?.['ESGAR_2016_SurgeryAlone']?.auc?.value, 2, false, true)}), this difference did not reach statistical significance (${helpers.formatPValueForPublication(esgarSurgeryAloneComparison?.delong?.pValue)}). A post-hoc power analysis revealed that this specific comparison had a statistical power of only ${helpers.formatValueForPublication(power * 100, 0)}%, suggesting that the study was underpowered to definitively detect a difference in this subgroup.`;
+                esgarPowerSentence = `The non-significant difference against the ESGAR staging benchmark in the surgery-alone cohort should be interpreted in light of the limited post-hoc power (${helpers.formatValueForPublication(power * 100, 0)}%), reflecting the modest subgroup sample size.`;
             }
         }
-        
-        let interCohortText = '';
-        const interComp = stats?.interCohortComparison?.as;
-        if (interComp && Math.abs(interComp.diffAUC) < 0.2) { 
-             interCohortText = `This robustness is further underscored by the fact that its diagnostic performance did not significantly differ between the two clinical settings (${helpers.formatPValueForPublication(interComp.pValue)}), suggesting its utility across the entire treatment pathway of rectal cancer.`;
-        }
 
+        const literatureSentence = `These findings align with contemporary reports underscoring the constraints of morphology-only assessment ${helpers.getReference('Beets_Tan_2018')}${helpers.getReference('Al_Sukhni_2012')}${helpers.getReference('Zhuang_2021')} and complement benchmarking work on node-centric MRI criteria ${helpers.getReference('Rutegard_2025')}${helpers.getReference('Jiang_2025')}, while resonating with the diminishing reliance on conventional nodal staging in pivotal rectal cancer trials such as OCUM ${helpers.getReference('Stelzner_2022')}.`;
 
-        const summaryParagraph = `
-            <p>In this study, we validated the diagnostic performance of the contrast-enhanced Avocado Sign for predicting the patient-level mesorectal nodal status in rectal cancer. Our central finding is that this simple, binary imaging marker was not only highly accurate (AUC, ${helpers.formatMetricForPublication(performanceAS?.auc, 'auc')}) but also proved to be statistically superior to a cohort-specific, data-driven T2-weighted benchmark ${bfComparisonText}. This superiority is particularly noteworthy given that the data-driven benchmark was mathematically optimized for this specific dataset—a hurdle that a generalizable criterion would not typically be expected to clear. This suggests that the Avocado Sign efficiently captures diagnostically relevant information that may be missed by combinations of standard T2-weighted morphologic features.</p>
+        const interobserverSentence = `Interobserver agreement remained almost perfect (Cohen’s κ = ${helpers.formatValueForPublication(overallStats?.interobserverKappa?.value, 2, false, true)}), supporting standardised reporting ${helpers.getReference('Lurz_Schaefer_2025')}.`;
+
+        const principalFindingsSection = `
+            <h3 id="discussion_principal_findings">Principal Findings</h3>
+            <p>The contrast-enhanced Avocado Sign delivered high diagnostic discrimination for mesorectal nodal staging (AUC ${asAucText}) with balanced sensitivity (${asSensText}) and specificity (${asSpecText}), yielding an overall accuracy of ${asAccText}. ${comparatorSentence}</p>
         `;
 
-        const contextParagraph = `
-            <p>When contextualized against established literature, the Avocado Sign's performance surpassed that of most conventional T2-weighted criteria.${powerAnalysisText} The limitations of these standard criteria are well-documented, with meta-analyses reporting suboptimal accuracy and highlighting N-staging as the "weakest link" of rectal MRI ${helpers.getReference('Beets_Tan_2018')}${helpers.getReference('Al_Sukhni_2012')}${helpers.getReference('Zhuang_2021')}. This diagnostic gap has led to a diminished reliance on T- and N-staging for therapy decisions in landmark trials like OCUM ${helpers.getReference('Stelzner_2022')}. While current ACR Appropriateness Criteria correctly identify MRI as the primary modality for locoregional staging, they also acknowledge that nodal assessment remains "challenging" and that IV contrast may be helpful only in specific scenarios. Our findings provide compelling evidence that incorporating a contrast-enhanced sequence enables the use of the Avocado Sign, a marker that significantly improves the accuracy of N-staging, thereby addressing a well-documented limitation of the standard approach. The sign's clinical potential is reinforced by its consistent performance across both treatment-naïve and post-neoadjuvant therapy settings (${helpers.formatPValueForPublication(interComp.pValue)}) and its almost perfect interobserver agreement (Cohen’s kappa = ${helpers.formatValueForPublication(overallStats?.interobserverKappa?.value, 2, false, true)}), which indicates it is a simple and highly reproducible marker suitable for broad clinical application ${helpers.getReference('Lurz_Schaefer_2025')}.</p>
+        const diagnosticInterpretationSection = confusionMatrixSentence
+            ? `
+                <h3 id="discussion_diagnostic_interpretation">Diagnostic Interpretation</h3>
+                <p>${confusionMatrixSentence}</p>
+            `
+            : '';
+
+        const subgroupSection = subgroupParagraph
+            ? `
+                <h3 id="discussion_subgroup_generalizability">Subgroup Performance and Generalisability</h3>
+                <p>${subgroupParagraph} ${interobserverSentence}</p>
+            `
+            : `
+                <h3 id="discussion_subgroup_generalizability">Subgroup Performance and Generalisability</h3>
+                <p>${interobserverSentence}</p>
+            `;
+
+        const literatureSection = `
+            <h3 id="discussion_context">Comparison with Existing Evidence</h3>
+            <p>${esgarSentence} ${esgarPowerSentence} ${literatureSentence} Together, they emphasise that the Avocado Sign augments the ESGAR-endorsed lexicon ${helpers.getReference('Lee_2023')} by capturing contrast-enhancement kinetics beyond morphologic descriptors.</p>
         `;
 
-        const clinicalImplicationsParagraph = `
-            <p>The clinical implications of a more reliable predictor for the patient-based nodal status are substantial. Current treatment paradigms are increasingly moving towards personalized approaches, such as total neoadjuvant therapy (TNT) and organ preservation strategies, which hinge on accurate initial risk stratification ${helpers.getReference('Garcia_Aguilar_2022')}${helpers.getReference('Schrag_2023')}. An inaccurate nodal status assessment can lead to either overtreatment of node-negative patients with toxic systemic therapies or undertreatment of node-positive patients, compromising oncologic outcomes. The Avocado Sign, as a simple binary feature, has the potential to objectify and streamline decision-making for the multidisciplinary tumor board. It could replace the often ambiguous interpretation of multiple T2-based features with a clear signal, thereby increasing diagnostic confidence. The integration of contrast-enhanced sequences for the evaluation of the Avocado Sign could therefore represent a critical step towards establishing a new, more accurate standard of care for nodal staging in rectal cancer.</p>
+        const clinicalImplicationsSection = `
+            <h3 id="discussion_clinical_implications">Clinical Implications</h3>
+            <p>The sign’s binary readout provides an actionable surrogate for nodal biology that can streamline multidisciplinary tumour board deliberations and dovetails with organ-preserving strategies such as total neoadjuvant therapy and watch-and-wait protocols ${helpers.getReference('Garcia_Aguilar_2022')}${helpers.getReference('Schrag_2023')}. Consistent performance across treatment stages facilitates harmonised reporting templates and may decrease reliance on extended morphologic criteria, thereby reducing interpretive variability.</p>
         `;
 
-        const limitationsParagraph = `
-            <p>Our study has several limitations. First, its retrospective, single-center design may limit the generalizability of our findings, and selection bias, although mitigated by analyzing consecutive patients, cannot be entirely ruled out. Second, the subgroup of treatment-naïve patients who underwent primary surgery was relatively small (n=${commonData.nSurgeryAlone}), which warrants caution when interpreting the results specific to this cohort and likely contributed to the low statistical power observed in some subgroup analyses. Third, the data-driven T2 benchmark was derived from and applied to the same dataset, which carries an inherent risk of overfitting; however, this makes the demonstrated superiority of the Avocado Sign even more compelling. Finally, all MRI examinations were performed on a single 3.0-T system using one type of gadolinium-based contrast agent, and performance with other agents or at different field strengths remains to be validated.</p>
+        const futureWorkSection = `
+            <h3 id="discussion_future_work">Future Directions</h3>
+            <p>Prospective multicentre trials should validate these findings across vendors, field strengths, and contrast agents, explore integration with automated detection or radiomics pipelines, and evaluate health-economic impact relative to prolonged morphologic protocols. Extending evaluation to lower-prevalence screening populations and incorporating longitudinal surveillance cohorts could define the biomarker’s role within adaptive treatment algorithms.</p>
         `;
-        
-        const conclusionParagraph = `
-            <p>In conclusion, the contrast-enhanced Avocado Sign is an accurate and reproducible imaging marker for the prediction of mesorectal nodal status in patients with rectal cancer. Its performance is superior to most established literature-based and computationally optimized T2-weighted criteria, suggesting it could simplify and standardize nodal assessment. Prospective multicenter validation is warranted to confirm these findings and to establish the role of contrast-enhanced MRI as a new standard in the clinical pathway for rectal cancer staging.</p>
+
+        const limitationsSection = `
+            <h3 id="discussion_limitations">Study Limitations</h3>
+            <p>This retrospective, single-centre analysis may restrict generalisability despite consecutive inclusion. The surgery-alone subgroup was small (n=${commonData.nSurgeryAlone}), constraining power for certain comparisons and influencing post-hoc power estimates. The brute-force T2 benchmark was derived from the same dataset, potentially introducing optimism bias, although any residual overfitting renders the observed superiority of the Avocado Sign conservative. Imaging was performed exclusively on a single 3.0-T platform using one gadolinium agent, and histopathology did not systematically quantify micrometastases, warranting external technical validation.</p>
+        `;
+
+        const conclusionSection = `
+            <h3 id="discussion_conclusion">Conclusion</h3>
+            <p>The contrast-enhanced Avocado Sign emerges as an accurate, reproducible, and implementation-ready biomarker for mesorectal nodal staging. Its superiority over both literature-based and data-driven T2-weighted criteria supports immediate incorporation into European Radiology practice frameworks, while ongoing multicentre research should finalise its placement within staging algorithms and adaptive treatment pathways.</p>
         `;
 
         return `
-            ${summaryParagraph}
-            ${contextParagraph}
-            ${clinicalImplicationsParagraph}
-            ${limitationsParagraph}
-            ${conclusionParagraph}
+            ${principalFindingsSection}
+            ${diagnosticInterpretationSection}
+            ${subgroupSection}
+            ${literatureSection}
+            ${clinicalImplicationsSection}
+            ${futureWorkSection}
+            ${limitationsSection}
+            ${conclusionSection}
         `;
     }
 

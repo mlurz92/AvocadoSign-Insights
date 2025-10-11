@@ -52,6 +52,7 @@ class App {
             }
             
             window.uiManager.initializeTooltips(document.body);
+            window.uiManager.updateLayoutMetrics();
             window.uiManager.markCriteriaSavedIndicator(window.t2CriteriaManager.isUnsaved());
             window.uiManager.showToast('Application initialized.', 'success', 2500);
 

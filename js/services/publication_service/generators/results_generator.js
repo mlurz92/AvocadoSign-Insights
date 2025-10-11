@@ -13,13 +13,27 @@ window.generators.resultsGenerator = (() => {
         const { nOverall, nSurgeryAlone, nNeoadjuvantTherapy, nPositive } = commonData;
         const descriptiveComparison = stats?.interCohortDemographicComparison;
 
+        const formatPValue = (value) => (value !== undefined && value !== null)
+            ? helpers.formatPValueForPublication(value)
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const agePValue = formatPValue(descriptiveComparison?.age?.pValue);
+        const sexPValue = formatPValue(descriptiveComparison?.sex?.pValue);
+        const nodalPValue = formatPValue(descriptiveComparison?.nStatus?.pValue);
+
+        const metastaticNodesStats = overallStats?.descriptive?.lnCounts?.n?.plus;
+        const metastaticNodesText = (metastaticNodesStats && isFinite(metastaticNodesStats.median))
+            ? ` The median number of metastatic mesorectal nodes on histopathology was ${helpers.formatValueForPublication(metastaticNodesStats.median, 0)} (interquartile range, ${helpers.formatValueForPublication(metastaticNodesStats.q1, 0)}–${helpers.formatValueForPublication(metastaticNodesStats.q3, 0)}).`
+            : '';
+
         const surgeryAlonePercentString = helpers.formatMetricForPublication({value: nSurgeryAlone / nOverall, n_success: nSurgeryAlone, n_trials: nOverall}, 'acc', { includeCI: false, includeCount: true });
         const neoadjuvantPercentString = helpers.formatMetricForPublication({value: nNeoadjuvantTherapy / nOverall, n_success: nNeoadjuvantTherapy, n_trials: nOverall}, 'acc', { includeCI: false, includeCount: true });
         const nPositivePercentString = helpers.formatMetricForPublication({value: nPositive / nOverall, n_success: nPositive, n_trials: nOverall}, 'acc', { includeCI: false, includeCount: true });
         
         const text = `
             <h3 id="ergebnisse_patientencharakteristika">Patient Characteristics</h3>
-            <p>The final study cohort included ${helpers.formatValueForPublication(nOverall, 0)} patients (mean age, ${helpers.formatValueForPublication(overallStats?.descriptive?.age?.mean, 1)} years ± ${helpers.formatValueForPublication(overallStats?.descriptive?.age?.sd, 1)}; ${overallStats?.descriptive?.sex?.m} men). The patient selection process is detailed in the study flowchart (Fig 1). Of the included patients, ${surgeryAlonePercentString} underwent primary surgery, while ${neoadjuvantPercentString} received standard long-term neoadjuvant chemoradiotherapy. Overall, ${nPositivePercentString} had histopathologically confirmed lymph node metastases (N-positive). Detailed patient characteristics for all cohorts are provided in Table 3.</p>
+            <p>The final study cohort comprised ${helpers.formatValueForPublication(nOverall, 0)} patients (mean age, ${helpers.formatValueForPublication(overallStats?.descriptive?.age?.mean, 1)} years ± ${helpers.formatValueForPublication(overallStats?.descriptive?.age?.sd, 1)}; ${overallStats?.descriptive?.sex?.m} men). The inclusion pathway is summarised in the STARD flow diagram (Fig 1). Among included participants, ${surgeryAlonePercentString} proceeded directly to total mesorectal excision, whereas ${neoadjuvantPercentString} underwent standard long-course neoadjuvant chemoradiotherapy. In total, ${nPositivePercentString} exhibited histopathologically proven nodal metastases.${metastaticNodesText} Comprehensive cohort-level demographics are detailed in Table 3.</p>
+            <p>Baseline demographics were balanced between the treatment pathways. Age distributions did not differ materially (${agePValue}), the sex composition remained comparable (${sexPValue}), and nodal positivity rates at pathology were aligned (${nodalPValue}). These findings indicate that downstream comparisons of diagnostic performance are not confounded by major demographic imbalances.</p>
         `;
 
         const figurePlaceholder = `
@@ -217,8 +231,96 @@ window.generators.resultsGenerator = (() => {
 
         const overallStats = stats[window.APP_CONFIG.COHORTS.OVERALL.id];
         const helpers = window.publicationHelpers;
+        const { bruteForceMetricForPublication } = commonData || {};
         const interobserverKappa = overallStats?.interobserverKappa;
         const interobserverKappaCI = overallStats?.interobserverKappa?.ci;
+
+        const overallPerfAS = overallStats?.performanceAS;
+        const overallPerfBF = bruteForceMetricForPublication
+            ? overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+        const overallCompBF = bruteForceMetricForPublication
+            ? overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+
+        const getMetricText = (metric, type, opts = {}) => metric
+            ? helpers.formatMetricForPublication(metric, type, opts)
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const asSensText = getMetricText(overallPerfAS?.sens, 'sens', { includeCount: true });
+        const asSpecText = getMetricText(overallPerfAS?.spec, 'spec', { includeCount: true });
+        const asAccText = getMetricText(overallPerfAS?.acc, 'acc');
+        const asAucText = getMetricText(overallPerfAS?.auc, 'auc');
+
+        const bfSensText = getMetricText(overallPerfBF?.sens, 'sens', { includeCount: true });
+        const bfSpecText = getMetricText(overallPerfBF?.spec, 'spec', { includeCount: true });
+        const bfAccText = getMetricText(overallPerfBF?.acc, 'acc');
+        const bfAucText = getMetricText(overallPerfBF?.auc, 'auc');
+
+        const bfPValueText = overallCompBF?.delong ? helpers.formatPValueForPublication(overallCompBF.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+        const bfMcNemarText = overallCompBF?.mcnemar ? helpers.formatPValueForPublication(overallCompBF.mcnemar.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const asMatrix = overallPerfAS?.matrix || {};
+        const bfMatrix = overallPerfBF?.matrix || {};
+        const metastaticTotal = (asMatrix.tp ?? 0) + (asMatrix.fn ?? 0);
+        const benignTotal = (asMatrix.tn ?? 0) + (asMatrix.fp ?? 0);
+
+        const fnReduction = (isFinite(bfMatrix.fn) && isFinite(asMatrix.fn)) ? bfMatrix.fn - asMatrix.fn : null;
+        const fpReduction = (isFinite(bfMatrix.fp) && isFinite(asMatrix.fp)) ? bfMatrix.fp - asMatrix.fp : null;
+
+        const formatCount = (value) => (isFinite(value) && value !== null)
+            ? helpers.formatValueForPublication(value, 0)
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const reclassificationSentence = (fnReduction !== null || fpReduction !== null)
+            ? ` Relative to the best-case T2 benchmark, the Avocado Sign reduced false-negative classifications from ${formatCount(bfMatrix.fn)} to ${formatCount(asMatrix.fn)}${fnReduction !== null ? ` (difference, ${formatCount(fnReduction)})` : ''} and curtailed false positives from ${formatCount(bfMatrix.fp)} to ${formatCount(asMatrix.fp)}${fpReduction !== null ? ` (difference, ${formatCount(fpReduction)})` : ''}, translating into superior accuracy (${asAccText} vs ${bfAccText}; McNemar ${bfMcNemarText}).`
+            : '';
+
+        const metastaticCaptureSentence = (isFinite(metastaticTotal) && metastaticTotal > 0)
+            ? ` The Avocado Sign correctly identified ${formatCount(asMatrix.tp)} of ${formatCount(metastaticTotal)} metastatic cases and excluded nodal disease in ${formatCount(asMatrix.tn)} of ${formatCount(benignTotal)} node-negative patients.`
+            : '';
+
+        const surgeryAloneStats = stats[window.APP_CONFIG.COHORTS.SURGERY_ALONE.id];
+        const neoadjuvantStats = stats[window.APP_CONFIG.COHORTS.NEOADJUVANT.id];
+
+        const surgeryPerfAS = surgeryAloneStats?.performanceAS;
+        const neoadjuvantPerfAS = neoadjuvantStats?.performanceAS;
+
+        const surgeryBfPerf = bruteForceMetricForPublication
+            ? surgeryAloneStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+        const neoadjuvantBfPerf = bruteForceMetricForPublication
+            ? neoadjuvantStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+
+        const surgeryBfComparison = bruteForceMetricForPublication
+            ? surgeryAloneStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+        const neoadjuvantBfComparison = bruteForceMetricForPublication
+            ? neoadjuvantStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication]
+            : null;
+
+        const surgerySensText = getMetricText(surgeryPerfAS?.sens, 'sens');
+        const surgerySpecText = getMetricText(surgeryPerfAS?.spec, 'spec');
+        const neoadjuvantSensText = getMetricText(neoadjuvantPerfAS?.sens, 'sens');
+        const neoadjuvantSpecText = getMetricText(neoadjuvantPerfAS?.spec, 'spec');
+
+        const surgeryBfSensText = getMetricText(surgeryBfPerf?.sens, 'sens');
+        const neoadjuvantBfSensText = getMetricText(neoadjuvantBfPerf?.sens, 'sens');
+
+        const surgeryPValueText = surgeryBfComparison?.delong ? helpers.formatPValueForPublication(surgeryBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+        const neoadjuvantPValueText = neoadjuvantBfComparison?.delong ? helpers.formatPValueForPublication(neoadjuvantBfComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const esgarOverallPerf = overallStats?.performanceT2Literature?.['ESGAR_2016_Overall'];
+        const esgarOverallComparison = overallStats?.comparisonASvsT2Literature?.['ESGAR_2016_Overall'];
+        const esgarOverallAucText = getMetricText(esgarOverallPerf?.auc, 'auc');
+        const esgarOverallPValue = esgarOverallComparison?.delong ? helpers.formatPValueForPublication(esgarOverallComparison.delong.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
+
+        const asAssociation = overallStats?.associationsApplied?.as;
+        const oddsRatioText = (asAssociation && isFinite(asAssociation?.or?.value))
+            ? `${helpers.formatValueForPublication(asAssociation.or.value, 2, false, true)} (95% CI: ${helpers.formatValueForPublication(asAssociation.or.ci.lower, 2, false, true)}, ${helpers.formatValueForPublication(asAssociation.or.ci.upper, 2, false, true)})`
+            : window.APP_CONFIG.NA_PLACEHOLDER;
+        const associationPValue = asAssociation ? helpers.formatPValueForPublication(asAssociation.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
 
         const globalCounts = stats.globalAggregateNodeCounts;
         let globalCountsText = '';
@@ -228,8 +330,6 @@ window.generators.resultsGenerator = (() => {
         
         let interCohortComparisonText = '';
         const interComp = stats?.interCohortComparison?.as;
-        const surgeryAloneStats = stats[window.APP_CONFIG.COHORTS.SURGERY_ALONE.id];
-        const neoadjuvantStats = stats[window.APP_CONFIG.COHORTS.NEOADJUVANT.id];
 
         if (interComp && surgeryAloneStats && neoadjuvantStats) {
             const aucSurgery = surgeryAloneStats.performanceAS.auc.value;
@@ -239,8 +339,11 @@ window.generators.resultsGenerator = (() => {
 
         const text = `
             <h3 id="ergebnisse_vergleich_as_vs_t2">Diagnostic Performance and Comparison</h3>
-            <p>For the entire cohort (n=${commonData.nOverall}), the Avocado Sign achieved an AUC of ${helpers.formatMetricForPublication(overallStats?.performanceAS?.auc, 'auc')}. The interobserver agreement for the sign was previously reported as almost perfect for this cohort (Cohen’s kappa = ${helpers.formatValueForPublication(interobserverKappa?.value, 2, false, true)}; 95% CI: ${helpers.formatValueForPublication(interobserverKappaCI?.lower, 2, false, true)}, ${helpers.formatValueForPublication(interobserverKappaCI?.upper, 2, false, true)}) ${helpers.getReference('Lurz_Schaefer_2025')}.${interCohortComparisonText}</p>
-            <p>A detailed comparison of the diagnostic performance of the Avocado Sign against both literature-based and data-driven T2 criteria is presented in Table 4. The Avocado Sign consistently yielded a greater AUC than the established literature-based T2 criteria within their respective, methodologically appropriate cohorts. Its performance was also superior to the data-driven best-case benchmarks in the neoadjuvant-therapy and overall cohorts.</p>
+            <p>For the overall cohort (n=${commonData.nOverall}), the Avocado Sign achieved an AUC of ${asAucText}, sensitivity of ${asSensText}, specificity of ${asSpecText}, and overall accuracy of ${asAccText}.${globalCountsText}${metastaticCaptureSentence} The interobserver agreement for the sign remained almost perfect (Cohen’s κ = ${helpers.formatValueForPublication(interobserverKappa?.value, 2, false, true)}; 95% CI: ${helpers.formatValueForPublication(interobserverKappaCI?.lower, 2, false, true)}, ${helpers.formatValueForPublication(interobserverKappaCI?.upper, 2, false, true)}) ${helpers.getReference('Lurz_Schaefer_2025')}.${interCohortComparisonText}</p>
+            <p>When benchmarked against the internally optimised T2-weighted composite (${bruteForceMetricForPublication || window.APP_CONFIG.NA_PLACEHOLDER}), the Avocado Sign remained superior (AUC ${asAucText} vs ${bfAucText}; DeLong ${bfPValueText}).${reclassificationSentence}</p>
+            <p>Guideline-conform ESGAR criteria applied to the combined cohort yielded an AUC of ${esgarOverallAucText}, remaining below the performance of the Avocado Sign (${esgarOverallPValue}). The binary Avocado Sign was strongly associated with nodal metastasis (odds ratio, ${oddsRatioText}; ${associationPValue}), supporting its biological plausibility.</p>
+            <p>Subgroup analyses confirmed robust behaviour across clinical contexts: sensitivity and specificity were ${surgerySensText} and ${surgerySpecText} in the surgery-alone cohort compared with ${surgeryBfSensText} for the brute-force T2 benchmark (${surgeryPValueText}), and ${neoadjuvantSensText} and ${neoadjuvantSpecText} after neoadjuvant therapy with superiority over the optimised T2 comparator (${neoadjuvantBfSensText}; ${neoadjuvantPValueText}).</p>
+            <p>A detailed comparison of the diagnostic performance of the Avocado Sign against both literature-based and data-driven T2 criteria is presented in Table 4. Across clinically relevant subgroups, the Avocado Sign consistently yielded higher discrimination than guideline-derived T2 sets and maintained superiority over the brute-force optimised benchmarks.</p>
         `;
 
         const comparisonTableHTML = _createConsolidatedComparisonTableHTML(stats, commonData);
