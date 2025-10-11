@@ -73,7 +73,7 @@ window.generators.discussionGenerator = (() => {
         const interComp = stats?.interCohortComparison?.as;
         const interCohortPValueText = interComp ? helpers.formatPValueForPublication(interComp.pValue) : window.APP_CONFIG.NA_PLACEHOLDER;
         if (interComp && Math.abs(interComp.diffAUC) < 0.2) {
-             interCohortText = `This robustness is further underscored by the fact that its diagnostic performance did not significantly differ between the two clinical settings (${helpers.formatPValueForPublication(interComp.pValue)}), suggesting its utility across the entire treatment pathway of rectal cancer.`;
+             interCohortText = `This robustness is further underscored by the fact that its diagnostic performance did not significantly differ between the two clinical settings (${interCohortPValueText}), suggesting its utility across the entire treatment pathway of rectal cancer.`;
         }
 
 
