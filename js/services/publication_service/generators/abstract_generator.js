@@ -14,7 +14,11 @@ window.generators.abstractGenerator = (() => {
         const bfResultForPub = overallStats?.performanceT2Bruteforce?.[bruteForceMetricForPublication];
         const bfComparisonForPub = overallStats?.comparisonASvsT2Bruteforce?.[bruteForceMetricForPublication];
         
-        let resultsSectionHTML = '<p>Results could not be generated due to missing statistical data.</p>';
+        let objectivesParagraph = '<p>Objectives could not be generated due to missing statistical data.</p>';
+        let methodsParagraph = '<p>Methods could not be generated due to missing statistical data.</p>';
+        let resultsParagraph = '<p>Results could not be generated due to missing statistical data.</p>';
+        let conclusionParagraph = '<p>Conclusion could not be generated due to missing statistical data.</p>';
+        let clinicalRelevanceParagraph = '';
 
         if (perfAS && bfResultForPub && bfComparisonForPub) {
             const meanAgeFormatted = helpers.formatValueForPublication(overallStats.descriptive.age.mean, 1);
@@ -22,30 +26,36 @@ window.generators.abstractGenerator = (() => {
             const nPositiveText = helpers.formatMetricForPublication({ value: nPositive / nOverall, n_success: nPositive, n_trials: nOverall }, 'acc', { includeCI: false, includeCount: true });
 
             const asAucText = helpers.formatMetricForPublication(perfAS.auc, 'auc');
+            const asSensText = helpers.formatMetricForPublication(perfAS.sens, 'sens', { includeCI: false, includeCount: true });
+            const asSpecText = helpers.formatMetricForPublication(perfAS.spec, 'spec', { includeCI: false, includeCount: true });
             const bfAucText = helpers.formatMetricForPublication(bfResultForPub.auc, 'auc');
             const pValueText = helpers.formatPValueForPublication(bfComparisonForPub.delong.pValue);
 
-            const findingsSentence = `A total of ${nOverall} patients (mean age, ${meanAgeFormatted} years ± ${ageSDFormatted}; ${overallStats.descriptive.sex.m} men) were evaluated, of whom ${nPositiveText} had positive nodes at histopathology. For the overall cohort, the Avocado Sign yielded an area under the receiver operating characteristic curve (AUC) of ${asAucText}, which was superior to that of a computationally optimized T2-based benchmark (AUC, ${bfAucText}; ${pValueText}) and established literature-based criteria.`;
-            
-            resultsSectionHTML = `<p>${findingsSentence}</p>`;
+            objectivesParagraph = `<p>To determine whether the contrast-enhanced Avocado Sign provides higher diagnostic accuracy than contemporary T2-weighted criteria for predicting patient-level mesorectal nodal status in rectal cancer, in accordance with European Radiology and STARD reporting recommendations.</p>`;
+
+            methodsParagraph = `<p>In this retrospective, single-centre study, ${nOverall} consecutive patients with rectal cancer who underwent 3.0-T MRI between November 2015 and March 2025 were analysed. The study was approved by the institutional ethics committee with a waiver of additional informed consent. Two abdominal radiologists, blinded to pathology and each other, independently assessed the Avocado Sign on contrast-enhanced Dixon-VIBE images in dedicated sessions. Diagnostic performance was benchmarked against (i) exhaustive brute-force optimisation of T2-weighted morphologic combinations for a predefined metric and (ii) guideline-derived literature criteria applied to the appropriate cohorts. Histopathology from total mesorectal excision served as the reference standard. Confidence intervals were computed with Wilson or bootstrap methods, and AUCs were compared using the DeLong test.</p>`;
+
+            resultsParagraph = `<p>A total of ${nOverall} patients (mean age, ${meanAgeFormatted} years ± ${ageSDFormatted}; ${overallStats.descriptive.sex.m} men) were evaluated, with ${nPositiveText} harbouring nodal metastases. The Avocado Sign yielded an AUC of ${asAucText}, sensitivity of ${asSensText}, and specificity of ${asSpecText}. The best-performing, data-driven T2 benchmark achieved an AUC of ${bfAucText}, remaining inferior to the Avocado Sign (${pValueText}). Superiority was consistently observed when compared with established literature criteria.</p>`;
+
+            conclusionParagraph = `<p>The contrast-enhanced Avocado Sign demonstrated superior diagnostic performance over both optimised and literature-based T2-weighted criteria for mesorectal nodal staging, supporting its integration as a binary, reproducible marker in rectal MRI workflows.</p>`;
+
+            clinicalRelevanceParagraph = `<p style="margin-top: 1rem;"><strong>Clinical relevance statement:</strong> A dedicated contrast-enhanced assessment for the Avocado Sign may improve risk stratification and treatment planning for patients considered for neoadjuvant therapy.</p>`;
         }
-        
+
         const abstractContentHTML = `
             <div class="structured-abstract">
-                <h3>Background</h3>
-                <p>Accurate MRI-based staging of mesorectal lymph nodes in rectal cancer is crucial for treatment planning, but standard T2-weighted criteria have shown limited diagnostic performance.</p>
-                
-                <h3>Purpose</h3>
-                <p>To compare the diagnostic performance of a contrast-enhanced MRI feature (the Avocado Sign) with that of multiple T2-weighted criteria for predicting patient-level mesorectal nodal status in rectal cancer.</p>
-                
-                <h3>Materials and Methods</h3>
-                <p>This secondary analysis of a retrospective, single-institution study received institutional review board approval with a waiver of informed consent. Data from ${nOverall} consecutive patients with rectal cancer who underwent 3.0-T MRI between November 2015 and March 2025 were analyzed. Two blinded radiologists evaluated the Avocado Sign on contrast-enhanced T1-weighted images. The performance of this sign was compared against two sets of T2-based criteria: (a) a computationally optimized, data-driven benchmark derived from the study cohort and (b) established criteria from the literature. Histopathologic analysis served as the reference standard. The DeLong test was used to compare the area under the receiver operating characteristic curve (AUC).</p>
-                
+                <h3>Objectives</h3>
+                ${objectivesParagraph}
+
+                <h3>Methods</h3>
+                ${methodsParagraph}
+
                 <h3>Results</h3>
-                ${resultsSectionHTML}
-                
+                ${resultsParagraph}
+
                 <h3>Conclusion</h3>
-                <p>The contrast-enhanced Avocado Sign demonstrated superior diagnostic performance for predicting the patient-level mesorectal nodal status compared with both optimized and literature-based T2-weighted criteria, providing a robust and simplified alternative for nodal staging in rectal cancer.</p>
+                ${conclusionParagraph}
+                ${clinicalRelevanceParagraph}
             </div>
         `;
 

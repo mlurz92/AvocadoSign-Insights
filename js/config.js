@@ -9,8 +9,8 @@ window.DEFAULT_T2_CRITERIA = Object.freeze({
 
 window.APP_CONFIG = Object.freeze({
     APP_NAME: "Nodal Staging: Avocado Sign vs. T2 Criteria",
-    APP_VERSION: "5.3.0-ajr-publication-final",
-    PUBLICATION_TITLE: "Contrast-enhanced versus T2-weighted MRI for Predicting Nodal Status in Rectal Cancer: A Comparative Analysis",
+    APP_VERSION: "5.4.0-eurorad-manuscript",
+    PUBLICATION_TITLE: "Contrast-enhanced MRI Avocado Sign Outperforms Optimised T2 Criteria for Mesorectal Nodal Staging",
     NA_PLACEHOLDER: '—',
     COHORTS: Object.freeze({
         OVERALL: { id: 'Overall', therapyValue: null, displayName: 'Overall' },
@@ -144,12 +144,13 @@ window.APP_CONFIG = Object.freeze({
         Almlov_2020: { id: 15, text: "Almlöv K, Woisetschlager M, Loftås P, Hallböök O, Elander N, and Sandström P. MRI lymph node evaluation for prediction of metastases in rectal cancer. Anticancer Res. 2020;40(5):2757-63. doi:10.21873/anticanres.14247" },
         Koh_2008: { id: 16, text: "Koh DM, Chau I, Tait D, Wotherspoon A, Cunningham D, Brown G. Evaluating mesorectal lymph nodes in rectal cancer before and after neoadjuvant chemoradiation using thin-section T2-weighted magnetic resonance imaging. Int J Radiat Oncol Biol Phys. 2008;71:456–461. doi:10.1016/j.ijrobp.2007.10.016" },
         Zhuang_2021: { id: 17, text: "Zhuang Z, Zhang Y, Wei M, Yang X, Wang Z. Magnetic Resonance Imaging Evaluation of the Accuracy of Various Lymph Node Staging Criteria in Rectal Cancer: A Systematic Review and Meta-Analysis. Front Oncol. 2021;11:709070. doi:10.3389/fonc.2021.709070" },
-        Brown_2003: { id: 18, text: "Brown G, Richards CJ, Bourne MW, et al. Morphologic predictors of lymph node status in rectal cancer with use of high-spatial-resolution MR imaging with histopathologic comparison. Radiology. 2003;227(2):371-377. doi: 10.1148/radiol.2272011747" }
+        Brown_2003: { id: 18, text: "Brown G, Richards CJ, Bourne MW, et al. Morphologic predictors of lymph node status in rectal cancer with use of high-spatial-resolution MR imaging with histopathologic comparison. Radiology. 2003;227(2):371-377. doi: 10.1148/radiol.2272011747" },
+        Bossuyt_2015: { id: 19, text: "Bossuyt PM, Reitsma JB, Bruns DE, et al. STARD 2015: An updated list of essential items for reporting diagnostic accuracy studies. BMJ. 2015;351:h5527. doi:10.1136/bmj.h5527" }
     }),
     PUBLICATION_TEXTS: Object.freeze({
-        AJR_REGULATORY_STATEMENT: "This secondary analysis of a retrospective, single-institution study was compliant with the Health Insurance Portability and Accountability Act and approved by our institutional review board, which waived the requirement for additional written informed consent.",
+        AJR_REGULATORY_STATEMENT: "This retrospective, single-centre analysis complied with the Declaration of Helsinki, the European General Data Protection Regulation, and the institutional data governance framework. The ethics committee approved the study protocol and waived the requirement for additional written informed consent for the reuse of anonymised clinical and imaging data.",
         STATISTICAL_ANALYSIS_METHODS: "Descriptive statistics were used to summarize patient characteristics. Diagnostic performance metrics—including sensitivity, specificity, positive predictive value, negative predictive value, and accuracy—were calculated. The Wilson score method was used for 95% confidence intervals (CIs) of proportions. For the area under the receiver operating characteristic curve (AUC), CIs were derived using the bootstrap percentile method with 1000 replications.",
-        STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.3.0-ajr-publication-final). A two-sided P < .05 was considered to indicate statistical significance."
+        STATISTICAL_ANALYSIS_COMPARISON: "The primary comparison between the AUC of the Avocado Sign and other criteria was performed using the method described by DeLong et al for correlated ROC curves. A post-hoc power analysis was performed for these AUC comparisons to assess the statistical power of the study to detect the observed differences. McNemar’s test was used to compare accuracies. For associations between individual categorical features and nodal status, the Fisher exact test was used. For comparison of demographic data and AUCs between independent cohorts, the Welch t test and Fisher exact test were used, respectively. All statistical analyses were performed using custom software scripts (JavaScript, ES2020+) implemented in the analysis tool itself (Version 5.4.0-eurorad-manuscript). A two-sided P < .05 was considered to indicate statistical significance."
     }),
     UI_TEXTS: Object.freeze({
         analysisContextBanner: {

@@ -17,14 +17,16 @@ window.publicationService = (() => {
 
     function _generateAbbreviationsHTML(fullHtmlContent) {
         const potentialAbbreviations = {
-            'AJR': 'American Journal of Roentgenology',
             'AS': 'Avocado Sign',
             'AUC': 'Area under the receiver operating characteristic curve',
             'CI': 'Confidence interval',
             'DWI': 'diffusion-weighted imaging',
+            'ER': 'European Radiology',
             'ESGAR': 'European Society of Gastrointestinal and Abdominal Radiology',
+            'ESR': 'European Society of Radiology',
+            'GDPR': 'General Data Protection Regulation',
             'IQR': 'Interquartile Range',
-            'MDT': 'Multidisciplinary Tumor Board',
+            'MDT': 'Multidisciplinary Tumour Board',
             'nCRT': 'neoadjuvant chemoradiotherapy',
             'NPV': 'Negative predictive value',
             'PPV': 'Positive predictive value',
@@ -36,7 +38,7 @@ window.publicationService = (() => {
             'VIBE': 'volumetric interpolated breath-hold examination'
         };
 
-        const coreAbbreviations = new Set(['AS', 'AUC', 'CI', 'DWI', 'ESGAR', 'nCRT', 'NPV', 'PPV', 'T2w', 'TNT', 'AJR']);
+        const coreAbbreviations = new Set(['AS', 'AUC', 'CI', 'DWI', 'ESGAR', 'ESR', 'GDPR', 'nCRT', 'NPV', 'PPV', 'T2w', 'TNT']);
         const textContent = fullHtmlContent.replace(/<[^>]+>/g, ' ');
         const counts = {};
 
